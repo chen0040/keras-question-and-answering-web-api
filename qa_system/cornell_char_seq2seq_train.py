@@ -4,8 +4,8 @@ from keras.layers import Input, LSTM, Dense
 import numpy as np
 
 BATCH_SIZE = 64
-NUM_EPOCHS = 100
-HIDDEN_UNITS = 256
+NUM_EPOCHS = 20
+HIDDEN_UNITS = 64
 DATA_PATH = 'data/cornell-dialogs/movie_lines_cleaned_10k.txt'
 
 input_texts = []
@@ -14,18 +14,14 @@ input_characters = set()
 target_characters = set()
 
 lines = open(DATA_PATH, 'rt', encoding='utf8').read().split('\n')
-input_texts = []
-target_texts = []
 for idx,line in enumerate(lines):
     if idx % 2 == 0:
         input_texts.append(line)
     else:
-        target_texts.append(line)
+        target_text = '\t' + line + '\n'
+        target_texts.append(target_text)
 
 for input_text, target_text in zip(input_texts, target_texts):
-    target_text = '\t' + target_text + '\n'
-    input_texts.append(input_text)
-    target_texts.append(target_text)
     for char in input_text:
         if char not in input_characters:
             input_characters.add(char)
