@@ -22,7 +22,8 @@ DATA_PATH = 'data/SQuAD/train-v1.1.json'
 input_counter = Counter()
 target_counter = Counter()
 
-input_texts = []
+question_texts = []
+context_texts = []
 target_texts = []
 
 whitelist = 'abcdefghijklmnopqrstuvwxyz1234567890'
@@ -51,43 +52,6 @@ with open(DATA_PATH) as file:
                     print('answer: ', answer['text'])
 
 
-for file in os.listdir(DATA_DIR_PATH):
-    filepath = os.path.join(DATA_DIR_PATH, file)
-    if os.path.isfile(filepath):
-        print('processing file: ', file)
-        lines = open(filepath, 'rt', encoding='utf8').read().split('\n')
-        prev_words = []
-        for line in lines:
-
-            if line.startswith('- - '):
-                prev_words = []
-
-            if line.startswith('- - ') or line.startswith('  - '):
-                line = line.replace('- - ', '')
-                line = line.replace('  - ', '')
-                next_words = [w.lower() for w in nltk.word_tokenize(line)]
-                next_words = [w for w in next_words if in_white_list(w)]
-                if len(next_words) > MAX_TARGET_SEQ_LENGTH:
-                    next_words = next_words[0:MAX_TARGET_SEQ_LENGTH]
-
-                if len(prev_words) > 0:
-                    input_texts.append(prev_words)
-                    for w in prev_words:
-                        input_counter[w] += 1
-
-                    target_words = next_words[:]
-                    target_words.insert(0, 'START')
-                    target_words.append('END')
-                    for w in target_words:
-                        target_counter[w] += 1
-                    target_texts.append(target_words)
-
-                prev_words = next_words
-
-for idx, (input_words, target_words) in enumerate(zip(input_texts, target_texts)):
-    if idx > 10:
-        break
-    print([input_words, target_words])
 
 input_word2idx = dict()
 target_word2idx = dict()
@@ -116,7 +80,7 @@ encoder_input_data = []
 encoder_max_seq_length = 0
 decoder_max_seq_length = 0
 
-for input_words, target_words in zip(input_texts, target_texts):
+for input_words, target_words in zip(question_texts, target_texts):
     encoder_input_wids = []
     for w in input_words:
         w2idx = 1  # default [UNK]
