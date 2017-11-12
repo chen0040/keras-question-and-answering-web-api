@@ -106,16 +106,16 @@ np.save('models/squad/word-question-idx2word.npy', question_idx2word)
 np.save('models/squad/word-ans-word2idx.npy', ans_word2idx)
 np.save('models/squad/word-ans-idx2word.npy', ans_idx2word)
 
-context = dict()
-context['num_context_tokens'] = num_context_tokens
-context['num_question_tokens'] = num_question_tokens
-context['num_decoder_tokens'] = num_decoder_tokens
-context['context_max_seq_length'] = context_max_seq_length
-context['question_max_seq_length'] = question_max_seq_length
-context['ans_max_seq_length'] = ans_max_seq_length
+config = dict()
+config['num_context_tokens'] = num_context_tokens
+config['num_question_tokens'] = num_question_tokens
+config['num_decoder_tokens'] = num_decoder_tokens
+config['context_max_seq_length'] = context_max_seq_length
+config['question_max_seq_length'] = question_max_seq_length
+config['ans_max_seq_length'] = ans_max_seq_length
 
-print(context)
-np.save('models/squad/word-context.npy', context)
+print(config)
+np.save('models/squad/word-context.npy', config)
 
 
 def generate_batch(source):
@@ -128,21 +128,21 @@ def generate_batch(source):
             context_data_batch = []
             question_data_batch = []
             ans_data_batch = []
-            for (context, question, ans) in source_batch:
+            for (_context, _question, _ans) in source_batch:
                 context_wids = []
                 question_wids = []
                 ans_wids = []
-                for w in context:
+                for w in _context:
                     wid = 1
                     if w in context_word2idx:
                         wid = context_word2idx[w]
                     context_wids.append(wid)
-                for w in question:
+                for w in _question:
                     wid = 1
                     if w in question_word2idx:
                         wid = question_word2idx[w]
                     question_wids.append(wid)
-                for w in ans:
+                for w in _ans:
                     wid = 0
                     if w in ans_word2idx:
                         wid = ans_word2idx[w]
