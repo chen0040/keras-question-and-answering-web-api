@@ -143,7 +143,7 @@ def generate_batch(source):
                         wid = question_word2idx[w]
                     question_wids.append(wid)
                 for w in ans:
-                    wid = 1
+                    wid = 0
                     if w in ans_word2idx:
                         wid = ans_word2idx[w]
                     ans_wids.append(wid)
@@ -155,13 +155,13 @@ def generate_batch(source):
 
             decoder_target_data_batch = np.zeros(shape=(BATCH_SIZE, ans_max_seq_length, num_decoder_tokens))
             decoder_input_data_batch = np.zeros(shape=(BATCH_SIZE, ans_max_seq_length, num_decoder_tokens))
-            for lineIdx, ans_words in enumerate(ans_data_batch):
-                for idx, w in enumerate(ans_words):
+            for lineIdx, ans_wids in enumerate(ans_data_batch):
+                for idx, w2idx in enumerate(ans_wids):
                     if w in ans_word2idx:
                         w2idx = ans_word2idx[w]
-                        decoder_input_data_batch[lineIdx, idx, w2idx] = 1
-                        if idx > 0:
-                            decoder_target_data_batch[lineIdx, idx - 1, w2idx] = 1
+                    decoder_input_data_batch[lineIdx, idx, w2idx] = 1
+                    if idx > 0:
+                        decoder_target_data_batch[lineIdx, idx - 1, w2idx] = 1
             yield [context_data_batch, question_data_batch, decoder_input_data_batch], decoder_target_data_batch
 
 
