@@ -14,13 +14,13 @@ np.random.seed(42)
 
 BATCH_SIZE = 64
 NUM_EPOCHS = 100
-QUESTION_HIDDEN_UNITS = 64
+EMBED_HIDDEN_UNITS = 64
 HIDDEN_UNITS = 256
-MAX_DATA_COUNT = 10000
-MAX_CONTEXT_SEQ_LENGTH = 400
+MAX_DATA_COUNT = 5000
+MAX_CONTEXT_SEQ_LENGTH = 300
 MAX_QUESTION_SEQ_LENGTH = 60
 MAX_TARGET_SEQ_LENGTH = 50
-MAX_VOCAB_SIZE = 600
+MAX_VOCAB_SIZE = 1000
 DATA_PATH = 'data/SQuAD/train-v1.1.json'
 
 context_counter = Counter()
@@ -166,19 +166,20 @@ def generate_batch(source):
 
 
 context_inputs = Input(shape=(None,), name='context_inputs')
-encoded_context = Embedding(input_dim=num_context_tokens, output_dim=HIDDEN_UNITS,
+encoded_context = Embedding(input_dim=num_context_tokens, output_dim=EMBED_HIDDEN_UNITS,
                             input_length=context_max_seq_length, name='context_embedding')(context_inputs)
 encoded_context = Dropout(0.3)(encoded_context)
 
 question_inputs = Input(shape=(None,), name='question_inputs')
-encoded_question = Embedding(input_dim=num_question_tokens, output_dim=HIDDEN_UNITS,
+encoded_question = Embedding(input_dim=num_question_tokens, output_dim=EMBED_HIDDEN_UNITS,
                              input_length=question_max_seq_length, name='question_embedding')(question_inputs)
 encoded_question = Dropout(0.3)(encoded_question)
-encoded_question = LSTM(units=QUESTION_HIDDEN_UNITS, name='question_lstm')(encoded_question)
+encoded_question = LSTM(units=EMBED_HIDDEN_UNITS, name='question_lstm')(encoded_question)
 encoded_question = RepeatVector(context_max_seq_length)(encoded_question)
 
 merged = add([encoded_context, encoded_question])
-encoder_outputs, encoder_state_h, encoder_state_c = LSTM(units=HIDDEN_UNITS, name='encoder_lstm', return_state=True)(merged)
+encoder_outputs, encoder_state_h, encoder_state_c = LSTM(units=HIDDEN_UNITS,
+                                                         name='encoder_lstm', return_state=True)(merged)
 
 encoder_states = [encoder_state_h, encoder_state_c]
 
@@ -189,7 +190,7 @@ decoder_outputs, decoder_state_h, decoder_state_c = decoder_lstm(decoder_inputs,
 decoder_dense = Dense(units=num_decoder_tokens, activation='softmax', name='decoder_dense')
 decoder_outputs = decoder_dense(decoder_outputs)
 
-model = Model([context_inputs, question_inputs], decoder_outputs)
+model = Model([context_inputs, question_inputs, decoder_inputs], decoder_outputs)
 
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
