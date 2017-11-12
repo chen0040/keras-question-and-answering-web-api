@@ -1,11 +1,12 @@
 from keras.models import Model
+from keras.layers import add, Dropout, RepeatVector
 from keras.layers.recurrent import LSTM
 from keras.layers import Dense, Input, Embedding
 from keras.preprocessing.sequence import pad_sequences
 from collections import Counter
 import nltk
 import numpy as np
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 import os
 import json
 
@@ -13,19 +14,22 @@ np.random.seed(42)
 
 BATCH_SIZE = 64
 NUM_EPOCHS = 100
+QUESTION_HIDDEN_UNITS = 64
 HIDDEN_UNITS = 256
-MAX_CONTEXT_SEQ_LENGTH = 200
-MAX_QUESTION_SEQ_LENGTH = 30
-MAX_TARGET_SEQ_LENGTH = 30
+MAX_DATA_COUNT = 10000
+MAX_CONTEXT_SEQ_LENGTH = 400
+MAX_QUESTION_SEQ_LENGTH = 60
+MAX_TARGET_SEQ_LENGTH = 50
 MAX_VOCAB_SIZE = 600
 DATA_PATH = 'data/SQuAD/train-v1.1.json'
 
-input_counter = Counter()
-target_counter = Counter()
+context_counter = Counter()
+question_counter = Counter()
+ans_counter = Counter()
 
-question_texts = []
-context_texts = []
-target_texts = []
+context_max_seq_length = 0
+question_max_seq_length = 0
+ans_max_seq_length = 0
 
 whitelist = 'abcdefghijklmnopqrstuvwxyz1234567890'
 
@@ -37,97 +41,145 @@ def in_white_list(_word):
 
     return False
 
+
+data = []
 with open(DATA_PATH) as file:
     json_data = json.load(file)
 
     for instance in json_data['data']:
         for paragraph in instance['paragraphs']:
-            context = paragraph['context']
-            print('context: ', context)
+            context = [w.lower() for w in nltk.word_tokenize(paragraph['context']) if in_white_list(w)]
+            if len(context) > MAX_CONTEXT_SEQ_LENGTH:
+                continue
             qas = paragraph['qas']
             for qas_instance in qas:
-                question = qas_instance['question']
-                print('question: ', question)
+                question = [w.lower() for w in nltk.word_tokenize(qas_instance['question']) if in_white_list(w)]
+                if len(question) > MAX_QUESTION_SEQ_LENGTH:
+                    continue
                 answers = qas_instance['answers']
                 for answer in answers:
-                    print('answer: ', answer['text'])
+                    ans = [w.lower() for w in nltk.word_tokenize(answer['text']) if in_white_list(w)]
+                    if len(ans) > MAX_TARGET_SEQ_LENGTH:
+                        continue
+                    if len(data) < MAX_DATA_COUNT:
+                        data.append((context, question, ans))
+                        for w in context:
+                            context_counter[w] += 1
+                        for w in question:
+                            question_counter[w] += 1
+                        for w in ans:
+                            ans_counter[w] += 1
+                        context_max_seq_length = max(context_max_seq_length, len(context))
+                        question_max_seq_length = max(question_max_seq_length, len(question))
+                        ans_max_seq_length = max(ans_max_seq_length, len(ans))
+        if len(data) >= MAX_DATA_COUNT:
+            break
 
+context_word2idx = dict()
+question_word2idx = dict()
+ans_word2idx = dict()
+for idx, word in enumerate(question_counter.most_common(MAX_VOCAB_SIZE)):
+    question_word2idx[word[0]] = idx + 2
+for idx, word in enumerate(context_counter.most_common(MAX_VOCAB_SIZE)):
+    context_word2idx[word[0]] = idx + 2
+for idx, word in enumerate(ans_counter.most_common(MAX_VOCAB_SIZE)):
+    ans_word2idx[word[0]] = idx + 1
 
+context_word2idx['PAD'] = 0
+context_word2idx['UNK'] = 1
+question_word2idx['PAD'] = 0
+question_word2idx['UNK'] = 1
+ans_word2idx['UNK'] = 0
 
-input_word2idx = dict()
-target_word2idx = dict()
-for idx, word in enumerate(input_counter.most_common(MAX_VOCAB_SIZE)):
-    input_word2idx[word[0]] = idx + 2
-for idx, word in enumerate(target_counter.most_common(MAX_VOCAB_SIZE)):
-    target_word2idx[word[0]] = idx + 1
+context_idx2word = dict([(idx, word) for word, idx in context_word2idx.items()])
+question_idx2word = dict([(idx, word) for word, idx in question_word2idx.items()])
+ans_idx2word = dict([(idx, word) for word, idx in ans_word2idx.items()])
 
-input_word2idx['PAD'] = 0
-input_word2idx['UNK'] = 1
-target_word2idx['UNK'] = 0
+num_context_tokens = len(context_idx2word)
+num_question_tokens = len(question_idx2word)
+num_decoder_tokens = len(ans_idx2word)
 
-input_idx2word = dict([(idx, word) for word, idx in input_word2idx.items()])
-target_idx2word = dict([(idx, word) for word, idx in target_word2idx.items()])
-
-num_encoder_tokens = len(input_idx2word)
-num_decoder_tokens = len(target_idx2word)
-
-np.save('models/gunthercox/word-input-word2idx.npy', input_word2idx)
-np.save('models/gunthercox/word-input-idx2word.npy', input_idx2word)
-np.save('models/gunthercox/word-target-word2idx.npy', target_word2idx)
-np.save('models/gunthercox/word-target-idx2word.npy', target_idx2word)
-
-encoder_input_data = []
-
-encoder_max_seq_length = 0
-decoder_max_seq_length = 0
-
-for input_words, target_words in zip(question_texts, target_texts):
-    encoder_input_wids = []
-    for w in input_words:
-        w2idx = 1  # default [UNK]
-        if w in input_word2idx:
-            w2idx = input_word2idx[w]
-        encoder_input_wids.append(w2idx)
-
-    encoder_input_data.append(encoder_input_wids)
-    encoder_max_seq_length = max(len(encoder_input_wids), encoder_max_seq_length)
-    decoder_max_seq_length = max(len(target_words), decoder_max_seq_length)
+np.save('models/squad/word-context-word2idx.npy', context_word2idx)
+np.save('models/squad/word-context-idx2word.npy', context_idx2word)
+np.save('models/squad/word-question-word2idx.npy', question_word2idx)
+np.save('models/squad/word-question-idx2word.npy', question_idx2word)
+np.save('models/squad/word-ans-word2idx.npy', ans_word2idx)
+np.save('models/squad/word-ans-idx2word.npy', ans_idx2word)
 
 context = dict()
-context['num_encoder_tokens'] = num_encoder_tokens
+context['num_context_tokens'] = num_context_tokens
+context['num_question_tokens'] = num_question_tokens
 context['num_decoder_tokens'] = num_decoder_tokens
-context['encoder_max_seq_length'] = encoder_max_seq_length
-context['decoder_max_seq_length'] = decoder_max_seq_length
+context['context_max_seq_length'] = context_max_seq_length
+context['question_max_seq_length'] = question_max_seq_length
+context['ans_max_seq_length'] = ans_max_seq_length
 
 print(context)
-np.save('models/gunthercox/word-context.npy', context)
+np.save('models/squad/word-context.npy', context)
 
 
-def generate_batch(input_data, output_text_data):
-    num_batches = len(input_data) // BATCH_SIZE
+def generate_batch(source):
+    num_batches = len(source) // BATCH_SIZE
     while True:
         for batchIdx in range(0, num_batches - 1):
             start = batchIdx * BATCH_SIZE
             end = (batchIdx + 1) * BATCH_SIZE
-            encoder_input_data_batch = pad_sequences(input_data[start:end], encoder_max_seq_length)
-            decoder_target_data_batch = np.zeros(shape=(BATCH_SIZE, decoder_max_seq_length, num_decoder_tokens))
-            decoder_input_data_batch = np.zeros(shape=(BATCH_SIZE, decoder_max_seq_length, num_decoder_tokens))
-            for lineIdx, target_words in enumerate(output_text_data[start:end]):
-                for idx, w in enumerate(target_words):
-                    w2idx = 0  # default [UNK]
-                    if w in target_word2idx:
-                        w2idx = target_word2idx[w]
-                    decoder_input_data_batch[lineIdx, idx, w2idx] = 1
-                    if idx > 0:
-                        decoder_target_data_batch[lineIdx, idx - 1, w2idx] = 1
-            yield [encoder_input_data_batch, decoder_input_data_batch], decoder_target_data_batch
+            source_batch = source[start:end]
+            context_data_batch = []
+            question_data_batch = []
+            ans_data_batch = []
+            for (context, question, ans) in source_batch:
+                context_wids = []
+                question_wids = []
+                ans_wids = []
+                for w in context:
+                    wid = 1
+                    if w in context_word2idx:
+                        wid = context_word2idx[w]
+                    context_wids.append(wid)
+                for w in question:
+                    wid = 1
+                    if w in question_word2idx:
+                        wid = question_word2idx[w]
+                    question_wids.append(wid)
+                for w in ans:
+                    wid = 1
+                    if w in ans_word2idx:
+                        wid = ans_word2idx[w]
+                    ans_wids.append(wid)
+                context_data_batch.append(context_wids)
+                question_data_batch.append(question_wids)
+                ans_data_batch.append(ans_wids)
+            context_data_batch = pad_sequences(context_data_batch, context_max_seq_length)
+            question_data_batch = pad_sequences(question_data_batch, question_max_seq_length)
+
+            decoder_target_data_batch = np.zeros(shape=(BATCH_SIZE, ans_max_seq_length, num_decoder_tokens))
+            decoder_input_data_batch = np.zeros(shape=(BATCH_SIZE, ans_max_seq_length, num_decoder_tokens))
+            for lineIdx, ans_words in enumerate(ans_data_batch):
+                for idx, w in enumerate(ans_words):
+                    if w in ans_word2idx:
+                        w2idx = ans_word2idx[w]
+                        decoder_input_data_batch[lineIdx, idx, w2idx] = 1
+                        if idx > 0:
+                            decoder_target_data_batch[lineIdx, idx - 1, w2idx] = 1
+            yield [context_data_batch, question_data_batch, decoder_input_data_batch], decoder_target_data_batch
 
 
-encoder_inputs = Input(shape=(None,), name='encoder_inputs')
-encoder_embedding = Embedding(input_dim=num_encoder_tokens, output_dim=HIDDEN_UNITS,
-                              input_length=encoder_max_seq_length, name='encoder_embedding')
-encoder_lstm = LSTM(units=HIDDEN_UNITS, return_state=True, name='encoder_lstm')
-encoder_outputs, encoder_state_h, encoder_state_c = encoder_lstm(encoder_embedding(encoder_inputs))
+context_inputs = Input(shape=(None,), name='context_inputs')
+encoded_context = Embedding(input_dim=num_context_tokens, output_dim=HIDDEN_UNITS,
+                            input_length=context_max_seq_length, name='context_embedding')(context_inputs)
+encoded_context = Dropout(0.3)(encoded_context)
+
+question_inputs = Input(shape=(None,), name='question_inputs')
+encoded_question = Embedding(input_dim=num_question_tokens, output_dim=HIDDEN_UNITS,
+                             input_length=question_max_seq_length, name='question_embedding')(question_inputs)
+encoded_question = Dropout(0.3)(encoded_question)
+encoded_question = LSTM(units=QUESTION_HIDDEN_UNITS, name='question_lstm')(encoded_question)
+encoded_question = RepeatVector(context_max_seq_length)(encoded_question)
+
+merged = add([encoded_context, encoded_question])
+encoder_outputs, encoder_state_h, encoder_state_c = LSTM(units=HIDDEN_UNITS, name='encoder_lstm', return_state=True)(merged)
+
 encoder_states = [encoder_state_h, encoder_state_c]
 
 decoder_inputs = Input(shape=(None, num_decoder_tokens), name='decoder_inputs')
@@ -137,17 +189,17 @@ decoder_outputs, decoder_state_h, decoder_state_c = decoder_lstm(decoder_inputs,
 decoder_dense = Dense(units=num_decoder_tokens, activation='softmax', name='decoder_dense')
 decoder_outputs = decoder_dense(decoder_outputs)
 
-model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
+model = Model([context_inputs, question_inputs], decoder_outputs)
 
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
-Xtrain, Xtest, Ytrain, Ytest = train_test_split(encoder_input_data, target_texts, test_size=0.2, random_state=42)
+Xtrain, Xtest, Ytrain, Ytest = train_test_split(data, data, test_size=0.2, random_state=42)
 
 print(len(Xtrain))
 print(len(Xtest))
 
-train_gen = generate_batch(Xtrain, Ytrain)
-test_gen = generate_batch(Xtest, Ytest)
+train_gen = generate_batch(Xtrain)
+test_gen = generate_batch(Xtest)
 
 train_num_batches = len(Xtrain) // BATCH_SIZE
 test_num_batches = len(Xtest) // BATCH_SIZE
@@ -157,5 +209,5 @@ model.fit_generator(generator=train_gen, steps_per_epoch=train_num_batches,
                     verbose=1, validation_data=test_gen, validation_steps=test_num_batches)
 
 json = model.to_json()
-open('models/gunthercox/word-architecture.json', 'w').write(json)
-model.save_weights('models/gunthercox/word-weights.h5')
+open('models/squad/word-architecture.json', 'w').write(json)
+model.save_weights('models/squad/word-weights.h5')
