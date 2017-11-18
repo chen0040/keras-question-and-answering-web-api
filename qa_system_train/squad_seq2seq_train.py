@@ -121,7 +121,7 @@ np.save('models/squad/word-context.npy', config)
 def generate_batch(source):
     num_batches = len(source) // BATCH_SIZE
     while True:
-        for batchIdx in range(0, num_batches - 1):
+        for batchIdx in range(0, num_batches):
             start = batchIdx * BATCH_SIZE
             end = (batchIdx + 1) * BATCH_SIZE
             source_batch = source[start:end]
