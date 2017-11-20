@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block body %}
+    <p>Write question context and question below and press Query to get the answer (SQuaD): </p>
+    <form method=post>
+      <p>Write context here: <input type=text name=question_context></p>
+        <p>Write question here: <input type=text name=question></p>
+         <input type=submit value=Query>
+    </form>
+    <p>{{ answer }}</p>
+{% endblock %}

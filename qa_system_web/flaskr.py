@@ -34,9 +34,9 @@ def squad_qa():
             question_context = request.form['context']
             question = request.form['question']
             ans = squad_s2s_qa.predict(question_context, question)
-            return render_template('wordvec_cnn_result.html', question_context=question_context,
+            return render_template('squad_qa.html', question_context=question_context,
                                    question=question, answer=ans)
-    return render_template('wordvec_cnn.html')
+    return render_template('squad_qa.html')
 
 
 def main():
