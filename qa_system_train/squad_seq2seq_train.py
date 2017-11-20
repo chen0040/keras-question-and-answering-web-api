@@ -21,6 +21,7 @@ MAX_CONTEXT_SEQ_LENGTH = 300
 MAX_QUESTION_SEQ_LENGTH = 60
 MAX_TARGET_SEQ_LENGTH = 50
 MAX_VOCAB_SIZE = 1000
+MODEL_DIR = 'models/SQuaD'
 DATA_PATH = 'data/SQuAD/train-v1.1.json'
 
 context_counter = Counter()
@@ -99,12 +100,12 @@ num_context_tokens = len(context_idx2word)
 num_question_tokens = len(question_idx2word)
 num_decoder_tokens = len(ans_idx2word)
 
-np.save('models/squad/word-context-word2idx.npy', context_word2idx)
-np.save('models/squad/word-context-idx2word.npy', context_idx2word)
-np.save('models/squad/word-question-word2idx.npy', question_word2idx)
-np.save('models/squad/word-question-idx2word.npy', question_idx2word)
-np.save('models/squad/word-ans-word2idx.npy', ans_word2idx)
-np.save('models/squad/word-ans-idx2word.npy', ans_idx2word)
+np.save(MODEL_DIR + '/word-context-word2idx.npy', context_word2idx)
+np.save(MODEL_DIR + '/word-context-idx2word.npy', context_idx2word)
+np.save(MODEL_DIR + '/word-question-word2idx.npy', question_word2idx)
+np.save(MODEL_DIR + '/word-question-idx2word.npy', question_idx2word)
+np.save(MODEL_DIR + '/word-ans-word2idx.npy', ans_word2idx)
+np.save(MODEL_DIR + '/word-ans-idx2word.npy', ans_idx2word)
 
 config = dict()
 config['num_context_tokens'] = num_context_tokens
@@ -115,7 +116,7 @@ config['question_max_seq_length'] = question_max_seq_length
 config['ans_max_seq_length'] = ans_max_seq_length
 
 print(config)
-np.save('models/squad/word-context.npy', config)
+np.save(MODEL_DIR + '/word-context.npy', config)
 
 
 def generate_batch(source):
@@ -210,5 +211,5 @@ model.fit_generator(generator=train_gen, steps_per_epoch=train_num_batches,
                     verbose=1, validation_data=test_gen, validation_steps=test_num_batches)
 
 json = model.to_json()
-open('models/squad/word-architecture.json', 'w').write(json)
-model.save_weights('models/squad/word-weights.h5')
+open(MODEL_DIR + '/word-architecture.json', 'w').write(json)
+model.save_weights(MODEL_DIR + '/word-weights.h5')
