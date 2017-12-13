@@ -48,7 +48,7 @@ class SquadSeq2SeqQA(object):
         self.target_word2idx = np.load(MODEL_DIR + '/word-ans-word2idx.npy').item()
         self.target_idx2word = np.load(MODEL_DIR + '/word-ans-idx2word.npy').item()
 
-        self.context = np.load(MODEL_DIR + '/word-context.npy').item()
+        self.context = np.load(MODEL_DIR + '/word-squad-context.npy').item()
         num_context_tokens = self.context['num_context_tokens']
         self.context_max_seq_length = self.context['context_max_seq_length']
         num_question_tokens = self.context['num_question_tokens']

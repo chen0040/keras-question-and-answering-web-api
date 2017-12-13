@@ -118,7 +118,7 @@ config['question_max_seq_length'] = question_max_seq_length
 config['ans_max_seq_length'] = ans_max_seq_length
 
 print(config)
-np.save(MODEL_DIR + '/word-context.npy', config)
+np.save(MODEL_DIR + '/word-squad-context.npy', config)
 
 
 def generate_batch(source):
@@ -160,8 +160,6 @@ def generate_batch(source):
             decoder_input_data_batch = np.zeros(shape=(BATCH_SIZE, ans_max_seq_length, num_decoder_tokens))
             for lineIdx, ans_wids in enumerate(ans_data_batch):
                 for idx, w2idx in enumerate(ans_wids):
-                    if w in ans_word2idx:
-                        w2idx = ans_word2idx[w]
                     decoder_input_data_batch[lineIdx, idx, w2idx] = 1
                     if idx > 0:
                         decoder_target_data_batch[lineIdx, idx - 1, w2idx] = 1

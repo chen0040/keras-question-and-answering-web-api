@@ -192,8 +192,6 @@ def generate_batch(source):
             decoder_target_data_batch = np.zeros(shape=(BATCH_SIZE, ans_max_seq_length, num_decoder_tokens))
             for lineIdx, ans_wids in enumerate(ans_target_data_batch):
                 for idx, w2idx in enumerate(ans_wids):
-                    if w in ans_word2idx:
-                        w2idx = ans_word2idx[w]
                     if idx > 0:
                         decoder_target_data_batch[lineIdx, idx - 1, w2idx] = 1
             yield [context_data_batch, question_data_batch, ans_data_batch], decoder_target_data_batch
