@@ -9,6 +9,9 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import os
 import json
+import zipfile
+import urllib.request
+import sys
 
 np.random.seed(42)
 
@@ -23,24 +26,72 @@ MAX_TARGET_SEQ_LENGTH = 50
 MAX_VOCAB_SIZE = 1000
 MODEL_DIR = 'models/SQuaD'
 DATA_PATH = 'data/SQuAD/train-v1.1.json'
+GLOVE_EMBEDDING_SIZE = 100
+GLOVE_MODEL = "very_large_data/glove.6B." + str(GLOVE_EMBEDDING_SIZE) + "d.txt"
 
-context_counter = Counter()
-question_counter = Counter()
+WHITE_LIST = 'abcdefghijklmnopqrstuvwxyz1234567890,.?'
+
+
+def in_white_list(_word):
+    for char in _word:
+        if char in WHITE_LIST:
+            return True
+
+    return False
+
+
+def reporthook(block_num, block_size, total_size):
+    read_so_far = block_num * block_size
+    if total_size > 0:
+        percent = read_so_far * 1e2 / total_size
+        s = "\r%5.1f%% %*d / %d" % (
+            percent, len(str(total_size)), read_so_far, total_size)
+        sys.stderr.write(s)
+        if read_so_far >= total_size:  # near the end
+            sys.stderr.write("\n")
+    else:  # total size is unknown
+        sys.stderr.write("read %d\n" % (read_so_far,))
+
+
+def download_glove():
+    if not os.path.exists(GLOVE_MODEL):
+
+        glove_zip = 'very_large_data/glove.6B.zip'
+
+        if not os.path.exists('very_large_data'):
+            os.makedirs('very_large_data')
+
+        if not os.path.exists(glove_zip):
+            print('glove file does not exist, downloading from internet')
+            urllib.request.urlretrieve(url='http://nlp.stanford.edu/data/glove.6B.zip', filename=glove_zip,
+                                       reporthook=reporthook)
+
+        print('unzipping glove file')
+        zip_ref = zipfile.ZipFile(glove_zip, 'r')
+        zip_ref.extractall('very_large_data')
+        zip_ref.close()
+
+
+def load_glove():
+    download_glove()
+    _word2em = {}
+    file = open(GLOVE_MODEL, mode='rt', encoding='utf8')
+    for line in file:
+        words = line.strip().split()
+        word = words[0]
+        embeds = np.array(words[1:], dtype=np.float32)
+        _word2em[word] = embeds
+    file.close()
+    return _word2em
+
+
+word2em = load_glove()
+
 ans_counter = Counter()
 
 context_max_seq_length = 0
 question_max_seq_length = 0
 ans_max_seq_length = 0
-
-whitelist = 'abcdefghijklmnopqrstuvwxyz1234567890,.?'
-
-
-def in_white_list(_word):
-    for char in _word:
-        if char in whitelist:
-            return True
-
-    return False
 
 
 data = []
@@ -60,17 +111,11 @@ with open(DATA_PATH) as file:
                 answers = qas_instance['answers']
                 for answer in answers:
                     ans = [w.lower() for w in nltk.word_tokenize(answer['text']) if in_white_list(w)]
-                    ans = ['START'] + ans + ['END']
+                    ans = ['start'] + ans + ['end']
                     if len(ans) > MAX_TARGET_SEQ_LENGTH:
                         continue
                     if len(data) < MAX_DATA_COUNT:
                         data.append((context, question, ans))
-                        for w in context:
-                            context_counter[w] += 1
-                        for w in question:
-                            question_counter[w] += 1
-                        for w in ans:
-                            ans_counter[w] += 1
                         context_max_seq_length = max(context_max_seq_length, len(context))
                         question_max_seq_length = max(question_max_seq_length, len(question))
                         ans_max_seq_length = max(ans_max_seq_length, len(ans))
@@ -80,12 +125,6 @@ with open(DATA_PATH) as file:
 context_word2idx = dict()
 question_word2idx = dict()
 ans_word2idx = dict()
-for idx, word in enumerate(question_counter.most_common(MAX_VOCAB_SIZE)):
-    question_word2idx[word[0]] = idx + 2
-for idx, word in enumerate(context_counter.most_common(MAX_VOCAB_SIZE)):
-    context_word2idx[word[0]] = idx + 2
-for idx, word in enumerate(ans_counter.most_common(MAX_VOCAB_SIZE)):
-    ans_word2idx[word[0]] = idx + 1
 
 context_word2idx['PAD'] = 0
 context_word2idx['UNK'] = 1
