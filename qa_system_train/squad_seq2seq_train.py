@@ -32,7 +32,7 @@ context_max_seq_length = 0
 question_max_seq_length = 0
 ans_max_seq_length = 0
 
-whitelist = 'abcdefghijklmnopqrstuvwxyz1234567890'
+whitelist = 'abcdefghijklmnopqrstuvwxyz1234567890,.?'
 
 
 def in_white_list(_word):
@@ -60,6 +60,7 @@ with open(DATA_PATH) as file:
                 answers = qas_instance['answers']
                 for answer in answers:
                     ans = [w.lower() for w in nltk.word_tokenize(answer['text']) if in_white_list(w)]
+                    ans = ['START'] + ans + ['END']
                     if len(ans) > MAX_TARGET_SEQ_LENGTH:
                         continue
                     if len(data) < MAX_DATA_COUNT:
