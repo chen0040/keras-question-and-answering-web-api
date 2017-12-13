@@ -134,8 +134,8 @@ class SquadSeq2SeqQA(object):
             sample_word = self.target_idx2word[sample_token_idx]
             target_text_len += 1
 
-            if sample_word != 'START' and sample_word != 'END':
-                target_text += ' ' + sample_word
+            # if sample_word != 'START' and sample_word != 'END':
+            target_text += ' ' + sample_word
 
             if sample_word == 'END' or target_text_len >= self.max_decoder_seq_length:
                 terminated = True
@@ -148,12 +148,15 @@ class SquadSeq2SeqQA(object):
 
     def test_run(self):
         dataset = SquADDataSet()
-        record = dataset.get_data(1)
-        question_context = record[0]
-        question = record[1]
-        print(question_context)
-        print(question)
-        print(self.predict(question_context, question))
+        for i in range(10):
+            record = dataset.get_data(i * 50)
+            question_context = record[0]
+            question = record[1]
+            answer = record[2]
+            print('in: ', question_context)
+            print('question: ', question)
+            print('guess: ', self.predict(question_context, question))
+            print('answer: ', answer)
 
 
 if __name__ == '__main__':
