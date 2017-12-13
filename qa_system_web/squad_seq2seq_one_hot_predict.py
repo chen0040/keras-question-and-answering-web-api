@@ -39,16 +39,16 @@ class SquadSeq2SeqQA(object):
 
     def __init__(self):
 
-        self.question_word2idx = np.load(MODEL_DIR + '/word-question-word2idx.npy').items()
-        self.question_idx2word = np.load(MODEL_DIR + '/word-question-idx2word.npy').items()
+        self.question_word2idx = np.load(MODEL_DIR + '/word-question-word2idx.npy').item()
+        self.question_idx2word = np.load(MODEL_DIR + '/word-question-idx2word.npy').item()
 
-        self.context_word2idx = np.load(MODEL_DIR + '/word-context-word2idx.npy').items()
-        self.context_idx2word = np.load(MODEL_DIR + '/word-context-idx2word.npy').items()
+        self.context_word2idx = np.load(MODEL_DIR + '/word-context-word2idx.npy').item()
+        self.context_idx2word = np.load(MODEL_DIR + '/word-context-idx2word.npy').item()
 
-        self.target_word2idx = np.load(MODEL_DIR + '/word-ans-word2idx.npy').items()
-        self.target_idx2word = np.load(MODEL_DIR + '/word-ans-idx2word.npy').items()
+        self.target_word2idx = np.load(MODEL_DIR + '/word-ans-word2idx.npy').item()
+        self.target_idx2word = np.load(MODEL_DIR + '/word-ans-idx2word.npy').item()
 
-        self.context = np.load(MODEL_DIR + '/word-context.npy').items()
+        self.context = np.load(MODEL_DIR + '/word-context.npy').item()
         num_context_tokens = self.context['num_context_tokens']
         self.context_max_seq_length = self.context['context_max_seq_length']
         num_question_tokens = self.context['num_question_tokens']
@@ -63,7 +63,8 @@ class SquadSeq2SeqQA(object):
 
         question_inputs = Input(shape=(None,), name='question_inputs')
         encoded_question = Embedding(input_dim=num_question_tokens, output_dim=EMBED_HIDDEN_UNITS,
-                                     input_length=self.question_max_seq_length, name='question_embedding')(question_inputs)
+                                     input_length=self.question_max_seq_length, name='question_embedding')(
+            question_inputs)
         encoded_question = Dropout(0.3)(encoded_question)
         encoded_question = LSTM(units=EMBED_HIDDEN_UNITS, name='question_lstm')(encoded_question)
         encoded_question = RepeatVector(self.context_max_seq_length)(encoded_question)
@@ -145,13 +146,15 @@ class SquadSeq2SeqQA(object):
             states_value = [h, c]
         return target_text.strip()
 
-
     def test_run(self):
         dataset = SquADDataSet()
         record = dataset.get_data(1)
         question_context = record[0]
         question = record[1]
+        print(question_context)
+        print(question)
         print(self.predict(question_context, question))
+
 
 if __name__ == '__main__':
     app = SquadSeq2SeqQA()
