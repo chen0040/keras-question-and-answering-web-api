@@ -1,5 +1,5 @@
 from flask import Flask, request, send_from_directory, redirect, render_template, flash, url_for
-from qa_system_web.squad_seq2seq_predict import SquadSeq2SeqQA
+from qa_system_web.squad_seq2seq_one_hot_predict import SquadSeq2SeqQA
 
 app = Flask(__name__)
 app.config.from_object(__name__)  # load config from this file , flaskr.py
