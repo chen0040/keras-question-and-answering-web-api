@@ -68,6 +68,8 @@ class SquadSeq2SeqQA(object):
         pass
 
     def test_run(self):
+        dataset = SquadSeq2SeqQA()
+        dataset.get_data(1);
         question_context = 'i liked the Da Vinci Code a lot.'
         question = 'what do i like?'
         print(self.predict(question_context, question))
