@@ -137,7 +137,7 @@ class SquadSeq2SeqQA(object):
             # if sample_word != 'START' and sample_word != 'END':
             target_text += ' ' + sample_word
 
-            if sample_word == 'END' or target_text_len >= self.max_decoder_seq_length:
+            if target_text_len >= self.max_decoder_seq_length:
                 terminated = True
 
             target_seq = np.zeros((1, 1, self.num_decoder_tokens))
