@@ -7,6 +7,7 @@ from collections import Counter
 import nltk
 import numpy as np
 from sklearn.model_selection import train_test_split
+from keras.callbacks import ModelCheckpoint
 import os
 import json
 import zipfile
@@ -24,10 +25,11 @@ MAX_CONTEXT_SEQ_LENGTH = 300
 MAX_QUESTION_SEQ_LENGTH = 60
 MAX_TARGET_SEQ_LENGTH = 50
 MAX_VOCAB_SIZE = 1000
-MODEL_DIR = 'models/SQuaD'
+MODEL_DIR = 'models/SQuAD'
 DATA_PATH = 'data/SQuAD/train-v1.1.json'
 GLOVE_EMBEDDING_SIZE = 100
 GLOVE_MODEL = "very_large_data/glove.6B." + str(GLOVE_EMBEDDING_SIZE) + "d.txt"
+WEIGHT_FILE_PATH = MODEL_DIR + '/glove-weights.h5'
 
 WHITE_LIST = 'abcdefghijklmnopqrstuvwxyz1234567890,.?'
 
@@ -122,42 +124,28 @@ with open(DATA_PATH) as file:
         if len(data) >= MAX_DATA_COUNT:
             break
 
-context_word2idx = dict()
-question_word2idx = dict()
 ans_word2idx = dict()
 
-context_word2idx['PAD'] = 0
-context_word2idx['UNK'] = 1
-question_word2idx['PAD'] = 0
-question_word2idx['UNK'] = 1
 ans_word2idx['UNK'] = 0
 
-context_idx2word = dict([(idx, word) for word, idx in context_word2idx.items()])
-question_idx2word = dict([(idx, word) for word, idx in question_word2idx.items()])
 ans_idx2word = dict([(idx, word) for word, idx in ans_word2idx.items()])
 
-num_context_tokens = len(context_idx2word)
-num_question_tokens = len(question_idx2word)
 num_decoder_tokens = len(ans_idx2word)
 
-np.save(MODEL_DIR + '/word-context-word2idx.npy', context_word2idx)
-np.save(MODEL_DIR + '/word-context-idx2word.npy', context_idx2word)
-np.save(MODEL_DIR + '/word-question-word2idx.npy', question_word2idx)
-np.save(MODEL_DIR + '/word-question-idx2word.npy', question_idx2word)
-np.save(MODEL_DIR + '/word-ans-word2idx.npy', ans_word2idx)
-np.save(MODEL_DIR + '/word-ans-idx2word.npy', ans_idx2word)
+np.save(MODEL_DIR + '/glove-ans-word2idx.npy', ans_word2idx)
+np.save(MODEL_DIR + '/glove-ans-idx2word.npy', ans_idx2word)
 
 config = dict()
-config['num_context_tokens'] = num_context_tokens
-config['num_question_tokens'] = num_question_tokens
 config['num_decoder_tokens'] = num_decoder_tokens
 config['context_max_seq_length'] = context_max_seq_length
 config['question_max_seq_length'] = question_max_seq_length
 config['ans_max_seq_length'] = ans_max_seq_length
 
 print(config)
-np.save(MODEL_DIR + '/word-context.npy', config)
+np.save(MODEL_DIR + '/glove-context.npy', config)
 
+context_unknown = np.random.rand(GLOVE_EMBEDDING_SIZE)
+question_unknown = np.random.rand(GLOVE_EMBEDDING_SIZE)
 
 def generate_batch(source):
     num_batches = len(source) // BATCH_SIZE
@@ -169,52 +157,53 @@ def generate_batch(source):
             context_data_batch = []
             question_data_batch = []
             ans_data_batch = []
+            ans_target_data_batch = []
             for (_context, _question, _ans) in source_batch:
-                context_wids = []
-                question_wids = []
+                context_emb = []
+                question_emb = []
+                ans_emb = []
                 ans_wids = []
                 for w in _context:
-                    wid = 1
-                    if w in context_word2idx:
-                        wid = context_word2idx[w]
-                    context_wids.append(wid)
+                    emb = context_unknown
+                    if w in word2em:
+                        emb = word2em[w]
+                    context_emb.append(emb)
                 for w in _question:
-                    wid = 1
-                    if w in question_word2idx:
-                        wid = question_word2idx[w]
-                    question_wids.append(wid)
+                    emb = 1
+                    if w in word2em:
+                        emb = word2em[w]
+                    question_emb.append(emb)
                 for w in _ans:
                     wid = 0
                     if w in ans_word2idx:
                         wid = ans_word2idx[w]
                     ans_wids.append(wid)
-                context_data_batch.append(context_wids)
-                question_data_batch.append(question_wids)
-                ans_data_batch.append(ans_wids)
+                    if w in word2em:
+                        emb = word2em[w]
+                        ans_emb.append(emb)
+                context_data_batch.append(context_emb)
+                question_data_batch.append(question_emb)
+                ans_data_batch.append(ans_emb)
+                ans_target_data_batch.append(ans_wids)
             context_data_batch = pad_sequences(context_data_batch, context_max_seq_length)
             question_data_batch = pad_sequences(question_data_batch, question_max_seq_length)
+            ans_data_batch = pad_sequences(ans_data_batch, ans_max_seq_length)
 
             decoder_target_data_batch = np.zeros(shape=(BATCH_SIZE, ans_max_seq_length, num_decoder_tokens))
-            decoder_input_data_batch = np.zeros(shape=(BATCH_SIZE, ans_max_seq_length, num_decoder_tokens))
-            for lineIdx, ans_wids in enumerate(ans_data_batch):
+            for lineIdx, ans_wids in enumerate(ans_target_data_batch):
                 for idx, w2idx in enumerate(ans_wids):
                     if w in ans_word2idx:
                         w2idx = ans_word2idx[w]
-                    decoder_input_data_batch[lineIdx, idx, w2idx] = 1
                     if idx > 0:
                         decoder_target_data_batch[lineIdx, idx - 1, w2idx] = 1
-            yield [context_data_batch, question_data_batch, decoder_input_data_batch], decoder_target_data_batch
+            yield [context_data_batch, question_data_batch, ans_data_batch], decoder_target_data_batch
 
 
-context_inputs = Input(shape=(None,), name='context_inputs')
-encoded_context = Embedding(input_dim=num_context_tokens, output_dim=EMBED_HIDDEN_UNITS,
-                            input_length=context_max_seq_length, name='context_embedding')(context_inputs)
-encoded_context = Dropout(0.3)(encoded_context)
+context_inputs = Input(shape=(None,GLOVE_EMBEDDING_SIZE), name='context_inputs')
+encoded_context = Dropout(0.3)(context_inputs)
 
-question_inputs = Input(shape=(None,), name='question_inputs')
-encoded_question = Embedding(input_dim=num_question_tokens, output_dim=EMBED_HIDDEN_UNITS,
-                             input_length=question_max_seq_length, name='question_embedding')(question_inputs)
-encoded_question = Dropout(0.3)(encoded_question)
+question_inputs = Input(shape=(None,GLOVE_EMBEDDING_SIZE), name='question_inputs')
+encoded_question = Dropout(0.3)(question_inputs)
 encoded_question = LSTM(units=EMBED_HIDDEN_UNITS, name='question_lstm')(encoded_question)
 encoded_question = RepeatVector(context_max_seq_length)(encoded_question)
 
@@ -224,7 +213,7 @@ encoder_outputs, encoder_state_h, encoder_state_c = LSTM(units=HIDDEN_UNITS,
 
 encoder_states = [encoder_state_h, encoder_state_c]
 
-decoder_inputs = Input(shape=(None, num_decoder_tokens), name='decoder_inputs')
+decoder_inputs = Input(shape=(None, GLOVE_EMBEDDING_SIZE), name='decoder_inputs')
 decoder_lstm = LSTM(units=HIDDEN_UNITS, return_state=True, return_sequences=True, name='decoder_lstm')
 decoder_outputs, decoder_state_h, decoder_state_c = decoder_lstm(decoder_inputs,
                                                                  initial_state=encoder_states)
@@ -234,6 +223,9 @@ decoder_outputs = decoder_dense(decoder_outputs)
 model = Model([context_inputs, question_inputs, decoder_inputs], decoder_outputs)
 
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+
+json = model.to_json()
+open(MODEL_DIR + '/glove-architecture.json', 'w').write(json)
 
 Xtrain, Xtest, Ytrain, Ytest = train_test_split(data, data, test_size=0.2, random_state=42)
 
@@ -246,10 +238,11 @@ test_gen = generate_batch(Xtest)
 train_num_batches = len(Xtrain) // BATCH_SIZE
 test_num_batches = len(Xtest) // BATCH_SIZE
 
+checkpoint = ModelCheckpoint(filepath=WEIGHT_FILE_PATH, save_best_only=True)
+
 model.fit_generator(generator=train_gen, steps_per_epoch=train_num_batches,
                     epochs=NUM_EPOCHS,
-                    verbose=1, validation_data=test_gen, validation_steps=test_num_batches)
+                    verbose=1, validation_data=test_gen, validation_steps=test_num_batches, callbacks=[checkpoint])
 
-json = model.to_json()
-open(MODEL_DIR + '/word-architecture.json', 'w').write(json)
-model.save_weights(MODEL_DIR + '/word-weights.h5')
+
+model.save_weights(WEIGHT_FILE_PATH)
