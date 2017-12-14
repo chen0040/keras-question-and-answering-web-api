@@ -71,7 +71,7 @@ class SquadRnnEmbQA(object):
 
         self.model = Model([context_inputs, question_inputs], preds)
 
-        self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+        self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
     def predict(self, question_context, question):
         question_context = [w.lower() for w in nltk.word_tokenize(question_context) if in_white_list(w)]

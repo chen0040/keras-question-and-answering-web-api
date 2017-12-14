@@ -12,7 +12,7 @@ __pycache__/
 Thumbs.db
 
 qa_system_web/uploads
-qa_system/very_large_data
+qa_system_train/very_large_data
 
 # Distribution / packaging
 .Python

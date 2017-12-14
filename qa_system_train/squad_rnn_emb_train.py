@@ -1,7 +1,7 @@
 from keras.models import Model
 from keras.layers import add, Dropout, RepeatVector
 from keras.layers.recurrent import LSTM
-from keras.layers import Dense, Input, Embedding
+from keras.layers import Dense, Input, Embedding, TimeDistributed
 from keras.preprocessing.sequence import pad_sequences
 from collections import Counter
 import nltk
@@ -21,7 +21,7 @@ MAX_CONTEXT_SEQ_LENGTH = 300
 MAX_QUESTION_SEQ_LENGTH = 60
 MAX_TARGET_SEQ_LENGTH = 50
 MAX_VOCAB_SIZE = 10000
-MAX_ANS_COUNT = MAX_DATA_COUNT
+MAX_ANS_COUNT = MAX_DATA_COUNT // 10
 MODEL_DIR = 'models/SQuAD'
 DATA_PATH = 'data/SQuAD/train-v1.1.json'
 WEIGHT_FILE_PATH = MODEL_DIR + '/rnn-emb-weights.h5'
@@ -32,6 +32,7 @@ ans_counter = Counter()
 
 context_max_seq_length = 0
 question_max_seq_length = 0
+ans_max_seq_length = 0
 
 whitelist = 'abcdefghijklmnopqrstuvwxyz1234567890,.?'
 
@@ -60,9 +61,8 @@ with open(DATA_PATH) as file:
                     continue
                 answers = qas_instance['answers']
                 for answer in answers:
-                    ans = answer['text']
-                    ans_wids = [w.lower() for w in nltk.word_tokenize(ans) if in_white_list(w)]
-                    if len(ans_wids) > MAX_TARGET_SEQ_LENGTH:
+                    ans = [w.lower() for w in nltk.word_tokenize(answer['text']) if in_white_list(w)]
+                    if len(ans) > MAX_TARGET_SEQ_LENGTH:
                         continue
                     if len(data) < MAX_DATA_COUNT:
                         data.append((context, question, ans))
@@ -70,9 +70,11 @@ with open(DATA_PATH) as file:
                             context_counter[w] += 1
                         for w in question:
                             question_counter[w] += 1
-                        ans_counter[ans] += 1
+                        for w in ans:
+                            ans_counter[w] += 1
                         context_max_seq_length = max(context_max_seq_length, len(context))
                         question_max_seq_length = max(question_max_seq_length, len(question))
+                        ans_max_seq_length = max(ans_max_seq_length, len(ans))
 
         if len(data) >= MAX_DATA_COUNT:
             break
@@ -85,13 +87,12 @@ for idx, word in enumerate(question_counter.most_common(MAX_VOCAB_SIZE)):
 for idx, word in enumerate(context_counter.most_common(MAX_VOCAB_SIZE)):
     context_word2idx[word[0]] = idx + 2
 for idx, ans in enumerate(ans_counter.most_common(MAX_ANS_COUNT)):
-    ans_sent2idx[ans[0]] = idx + 1
+    ans_sent2idx[ans[0]] = idx
 
 context_word2idx['PAD'] = 0
 context_word2idx['UNK'] = 1
 question_word2idx['PAD'] = 0
 question_word2idx['UNK'] = 1
-ans_sent2idx['UNK'] = 0
 
 context_idx2word = dict([(idx, word) for word, idx in context_word2idx.items()])
 question_idx2word = dict([(idx, word) for word, idx in question_word2idx.items()])
@@ -142,7 +143,7 @@ def generate_batch(source):
                     if w in question_word2idx:
                         wid = question_word2idx[w]
                     question_wids.append(wid)
-                ans_id = 0
+                ans_id = -1
                 if _ans in ans_sent2idx:
                     ans_id = ans_sent2idx[_ans]
                 context_data_batch.append(context_wids)
@@ -152,8 +153,9 @@ def generate_batch(source):
             question_data_batch = pad_sequences(question_data_batch, question_max_seq_length)
 
             decoder_target_data_batch = np.zeros(shape=(BATCH_SIZE, ans_size))
-            for lineIdx, ans_id in enumerate(ans_data_batch):
-                decoder_target_data_batch[lineIdx, idx] = 1
+            for lineIdx, ans_idx in enumerate(ans_data_batch):
+                if ans_idx != -1:
+                    decoder_target_data_batch[lineIdx, ans_idx] = 1
             yield [context_data_batch, question_data_batch], decoder_target_data_batch
 
 
@@ -176,7 +178,7 @@ preds = Dense(ans_size, activation='softmax')(merged)
 
 model = Model([context_inputs, question_inputs], preds)
 
-model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
 json = model.to_json()
 open(MODEL_DIR + '/rnn-emb-architecture.json', 'w').write(json)
