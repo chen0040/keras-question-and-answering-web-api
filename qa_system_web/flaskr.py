@@ -1,5 +1,5 @@
 from flask import Flask, request, send_from_directory, redirect, render_template, flash, url_for
-from qa_system_web.squad_seq2seq_one_hot_predict import SquadSeq2SeqQA
+from qa_system_web.squad_rnn_emb_predict import SquadRnnEmbQA
 
 app = Flask(__name__)
 app.config.from_object(__name__)  # load config from this file , flaskr.py
@@ -8,7 +8,7 @@ app.config.from_object(__name__)  # load config from this file , flaskr.py
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-squad_s2s_qa = SquadSeq2SeqQA()
+squad_s2s_qa = SquadRnnEmbQA()
 
 
 @app.route('/')
