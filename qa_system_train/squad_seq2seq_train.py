@@ -37,7 +37,7 @@ def generate_batch(ds, input_data, target_data):
                                                        ds.num_target_tokens))
             for lineIdx, target_wid_list in enumerate(target_data[start:end]):
                 for idx, wid in enumerate(target_wid_list):
-                    if wid == 0:
+                    if wid == 0:  # UNKNOWN
                         continue
                     decoder_input_data_batch[lineIdx, idx, wid] = 1
                     if idx > 0:

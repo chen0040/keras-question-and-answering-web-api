@@ -35,9 +35,11 @@ def generate_batch(ds, input_word2em_data, output_data):
             end = (batchIdx + 1) * BATCH_SIZE
             encoder_input_data_batch = pad_sequences(input_word2em_data[start:end], ds.input_max_seq_length)
             decoder_target_data_batch = np.zeros(shape=(BATCH_SIZE, ds.target_max_seq_length, ds.num_target_tokens))
-            decoder_input_data_batch = np.zeros(shape=(BATCH_SIZE, ds.target_max_seq_length, glove.GLOVE_EMBEDDING_SIZE))
+            decoder_input_data_batch = np.zeros(shape=(BATCH_SIZE, ds.target_max_seq_length, ds.num_target_tokens))
             for lineIdx, target_wid_list in enumerate(output_data[start:end]):
                 for idx, wid in enumerate(target_wid_list):
+                    if wid == 0:  # UNKNOWN
+                        continue
                     decoder_input_data_batch[lineIdx, idx, wid] = 1
                     if idx > 0:
                         decoder_target_data_batch[lineIdx, idx - 1, wid] = 1
