@@ -14,11 +14,13 @@ HIDDEN_UNITS = 256
 MAX_INPUT_SEQ_LENGTH = 30
 MAX_TARGET_SEQ_LENGTH = 30
 MAX_VOCAB_SIZE = 600
-WEIGHT_FILE_PATH = 'models/SQuAD/seq2seq-weights.h5'
+MODEL_DIR_PATH = 'models/SQuAD'
+WEIGHT_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-weights.h5'
 
 
 dataset = SquADDataSet()
 dataset_seq2seq = SQuADSeq2Seq(dataset)
+dataset_seq2seq.save(MODEL_DIR_PATH)
 
 
 def generate_batch(ds, input_data, target_data):
