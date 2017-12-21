@@ -9,7 +9,6 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from qa_system_train.glove_loader import load_glove
 from qa_system_train.glove_loader import glove_zero_emb
-from qa_system_train.text_utils import in_white_list
 from qa_system_train.squad_dataset import SquADDataSet
 import json
 
