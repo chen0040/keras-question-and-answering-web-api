@@ -18,7 +18,7 @@ MODEL_DIR_PATH = 'models/SQuAD'
 WEIGHT_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-weights.h5'
 
 
-dataset = SquADDataSet()
+dataset = SquADDataSet(10000)
 dataset_seq2seq = SQuADSeq2Seq(dataset)
 dataset_seq2seq.save(MODEL_DIR_PATH)
 
@@ -37,6 +37,8 @@ def generate_batch(ds, input_data, target_data):
                                                        ds.num_target_tokens))
             for lineIdx, target_wid_list in enumerate(target_data[start:end]):
                 for idx, wid in enumerate(target_wid_list):
+                    if wid == 0:
+                        continue
                     decoder_input_data_batch[lineIdx, idx, wid] = 1
                     if idx > 0:
                         decoder_target_data_batch[lineIdx, idx - 1, wid] = 1
@@ -59,12 +61,12 @@ decoder_outputs = decoder_dense(decoder_outputs)
 
 model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
 
-model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
 json = model.to_json()
 open(MODEL_DIR_PATH + '/seq2seq-architecture.json', 'w').write(json)
 
-Xtrain, Xtest, Ytrain, Ytest = dataset_seq2seq.split(test_size=0.2, random_state=42)
+Xtrain, Xtest, Ytrain, Ytest = dataset_seq2seq.split(test_size=0.3, random_state=42)
 
 print(len(Xtrain))
 print(len(Xtest))

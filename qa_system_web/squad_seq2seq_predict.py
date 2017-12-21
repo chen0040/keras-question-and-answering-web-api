@@ -65,7 +65,7 @@ class SQuADSeq2SeqModel(object):
         # model_json = open(MODEL_DIR_PATH + '/seq2seq-architecture.json', 'r').read()
         # self.model = model_from_json(model_json)
         self.model.load_weights(MODEL_DIR_PATH + '/seq2seq-weights.h5')
-        self.model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
+        self.model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
 
         self.encoder_model = Model(encoder_inputs, encoder_states)
 

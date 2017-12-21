@@ -22,7 +22,7 @@ glove = Glove()
 input_texts = []
 target_texts = []
 
-dataset = SquADDataSet()
+dataset = SquADDataSet(10000)
 dataset_seq2seq = SQuADSeq2SeqEmb(dataset, glove.word2em, glove.GLOVE_EMBEDDING_SIZE)
 dataset_seq2seq.save(MODEL_DIR_PATH, 'glove')
 
@@ -58,7 +58,7 @@ decoder_outputs = decoder_dense(decoder_outputs)
 
 model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
 
-model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
 open(MODEL_DIR_PATH + '/seq2seq-glove-architecture.json', 'w').write(model.to_json())
 

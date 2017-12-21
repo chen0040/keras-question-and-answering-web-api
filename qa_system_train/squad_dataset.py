@@ -9,9 +9,8 @@ WHITE_LIST = 'abcdefghijklmnopqrstuvwxyz1234567890,.?'
 MAX_CONTEXT_SEQ_LENGTH = 300
 MAX_QUESTION_SEQ_LENGTH = 60
 MAX_TARGET_SEQ_LENGTH = 50
-MAX_VOCAB_SIZE = 5000
-MAX_DATA_COUNT = 5000
-
+MAX_INPUT_VOCAB_SIZE = 5000
+MAX_TARGET_VOCAB_SIZE = 5000
 
 def in_white_list(_word):
     for char in _word:
@@ -24,7 +23,7 @@ def in_white_list(_word):
 class SquADDataSet(object):
     data = None
 
-    def __init__(self):
+    def __init__(self, max_data_count):
         self.data = []
 
         with open(DATA_PATH) as file:
@@ -48,13 +47,13 @@ class SquADDataSet(object):
                             answer_wids = [w.lower() for w in nltk.word_tokenize(ans) if in_white_list(w)]
                             if len(answer_wids) > MAX_TARGET_SEQ_LENGTH:
                                 continue
-                            if len(self.data) < MAX_DATA_COUNT:
+                            if len(self.data) < max_data_count:
                                 self.data.append((context, question, ans))
 
-                    if len(self.data) >= MAX_DATA_COUNT:
+                    if len(self.data) >= max_data_count:
                         break
 
-                if len(self.data) >= MAX_DATA_COUNT:
+                if len(self.data) >= max_data_count:
                     break
 
     def get_data(self, index):
@@ -117,9 +116,9 @@ class SQuADSeq2Seq(object):
 
         self.input_word2idx = dict()
         self.target_word2idx = dict()
-        for idx, word in enumerate(input_counter.most_common(MAX_VOCAB_SIZE)):
+        for idx, word in enumerate(input_counter.most_common(MAX_INPUT_VOCAB_SIZE)):
             self.input_word2idx[word[0]] = idx + 2
-        for idx, word in enumerate(target_counter.most_common(MAX_VOCAB_SIZE)):
+        for idx, word in enumerate(target_counter.most_common(MAX_TARGET_VOCAB_SIZE)):
             self.target_word2idx[word[0]] = idx + 1
 
         self.target_word2idx['UNK'] = 0
@@ -231,7 +230,7 @@ class SQuADSeq2SeqEmb(object):
             self.target_max_seq_length = max(self.target_max_seq_length, len(output_data))
 
         self.target_word2idx = dict()
-        for idx, word in enumerate(target_counter.most_common(MAX_VOCAB_SIZE)):
+        for idx, word in enumerate(target_counter.most_common(MAX_TARGET_VOCAB_SIZE)):
             self.target_word2idx[word[0]] = idx + 1
 
         self.target_word2idx['UNK'] = 0
