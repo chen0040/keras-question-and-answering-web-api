@@ -42,6 +42,11 @@ class SQuADSeq2SeqModel(object):
         self.num_encoder_tokens = context['num_input_tokens']
         self.num_decoder_tokens = context['num_target_tokens']
 
+        print(self.max_encoder_seq_length)
+        print(self.max_decoder_seq_length)
+        print(self.num_encoder_tokens)
+        print(self.num_decoder_tokens)
+
         encoder_inputs = Input(shape=(None, ), name='encoder_inputs')
         encoder_embedding = Embedding(input_dim=self.num_encoder_tokens, output_dim=HIDDEN_UNITS,
                                       input_length=self.max_encoder_seq_length, name='encoder_embedding')
@@ -111,13 +116,15 @@ class SQuADSeq2SeqModel(object):
     def test_run(self, ds, index):
         paragraph, question, actual_answer = ds.get_data(index)
         predicted_answer = self.reply(paragraph, question)
-        print({'context': paragraph, 'question': question, 'predict': predicted_answer, 'actual': actual_answer})
+        # print({'context': paragraph, 'question': question})
+        print({'predict': predicted_answer, 'actual': actual_answer})
 
 
 def main():
     model = SQuADSeq2SeqModel()
     dataset = SquADDataSet()
-    model.test_run(dataset, 2)
+    for i in range(20):
+        model.test_run(dataset, i * 10)
 
 if __name__ == '__main__':
     main()
