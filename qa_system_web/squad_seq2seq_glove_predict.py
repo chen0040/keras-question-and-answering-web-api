@@ -1,6 +1,7 @@
 from keras.models import Model, model_from_json
 from keras.layers import Input, LSTM, Dense, Embedding
 from keras.preprocessing.sequence import pad_sequences
+from qa_system_web.squad_dataset import SquADDataSet
 import numpy as np
 import nltk
 import os
@@ -69,7 +70,7 @@ def load_glove():
     return word2em
 
 
-class GunthercoxWordGloveChatBot(object):
+class SQuADSeq2SeqGloveModel(object):
     model = None
     encoder_model = None
     decoder_model = None
@@ -89,7 +90,7 @@ class GunthercoxWordGloveChatBot(object):
             MODEL_DIR_PATH + '/seq2seq-glove-target-word2idx.npy').item()
         self.target_idx2word = np.load(
             MODEL_DIR_PATH + '/seq2seq-glove-target-idx2word.npy').item()
-        context = np.load(MODEL_DIR_PATH + '/seq2seq-glove-context.npy').item()
+        context = np.load(MODEL_DIR_PATH + '/seq2seq-glove-config.npy').item()
         self.max_encoder_seq_length = context['input_max_seq_length']
         self.max_decoder_seq_length = context['target_max_seq_length']
         self.num_decoder_tokens = context['num_target_tokens']
@@ -158,15 +159,18 @@ class GunthercoxWordGloveChatBot(object):
             states_value = [h, c]
         return target_text.strip()
 
-    def test_run(self):
-        print(self.reply('Hello'))
-        print(self.reply('How are you doing?'))
-        print(self.reply('Have you heard the news?'))
+    def test_run(self, ds, index):
+        paragraph, question, actual_answer = ds.get_data(index)
+        predicted_answer = self.reply(paragraph, question)
+        # print({'context': paragraph, 'question': question})
+        print({'predict': predicted_answer, 'actual': actual_answer})
 
 
 def main():
-    model = GunthercoxWordGloveChatBot()
-    model.test_run()
+    model = SQuADSeq2SeqGloveModel()
+    dataset = SquADDataSet()
+    for i in range(20):
+        model.test_run(dataset, i * 10)
 
 
 if __name__ == '__main__':
