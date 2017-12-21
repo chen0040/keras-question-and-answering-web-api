@@ -66,7 +66,7 @@ model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['ac
 json = model.to_json()
 open(MODEL_DIR_PATH + '/seq2seq-architecture.json', 'w').write(json)
 
-Xtrain, Xtest, Ytrain, Ytest = dataset_seq2seq.split(test_size=0.3, random_state=42)
+Xtrain, Xtest, Ytrain, Ytest = dataset_seq2seq.split(test_size=0.2, random_state=42)
 
 print(len(Xtrain))
 print(len(Xtest))
