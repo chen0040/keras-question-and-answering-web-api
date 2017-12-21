@@ -62,7 +62,7 @@ model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
 json = model.to_json()
-open('models/SQuAD/seq2seq-architecture.json', 'w').write(json)
+open(MODEL_DIR_PATH + '/seq2seq-architecture.json', 'w').write(json)
 
 Xtrain, Xtest, Ytrain, Ytest = dataset_seq2seq.split(test_size=0.2, random_state=42)
 

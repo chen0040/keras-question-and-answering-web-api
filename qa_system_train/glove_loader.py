@@ -55,3 +55,13 @@ def load_glove():
 
 def glove_zero_emb():
     return np.zeros(shape=GLOVE_EMBEDDING_SIZE)
+
+
+class Glove(object):
+
+    word2em = None
+
+    GLOVE_EMBEDDING_SIZE = GLOVE_EMBEDDING_SIZE
+
+    def __init__(self):
+        self.word2em = load_glove()
