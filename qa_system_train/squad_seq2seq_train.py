@@ -13,7 +13,7 @@ NUM_EPOCHS = 100
 MAX_VOCAB_SIZE = 600
 MODEL_DIR_PATH = 'models/SQuAD'
 WEIGHT_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-weights.h5'
-
+ARCHITECTURE_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-architecture.json'
 
 dataset = SquADDataSet(10000)
 dataset_seq2seq = SQuADSeq2SeqTupleSamples(dataset)
@@ -61,7 +61,7 @@ model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
 json = model.to_json()
-open(MODEL_DIR_PATH + '/seq2seq-architecture.json', 'w').write(json)
+open(ARCHITECTURE_FILE_PATH, 'w').write(json)
 
 Xtrain, Xtest, Ytrain, Ytest = dataset_seq2seq.split(test_size=0.2, random_state=42)
 
