@@ -43,5 +43,6 @@ def main():
     squad_s2s_qa.test_run()
     app.run(debug=True)
 
+
 if __name__ == '__main__':
     main()
