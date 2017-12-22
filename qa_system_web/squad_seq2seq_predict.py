@@ -2,20 +2,12 @@ from keras.models import Model, model_from_json
 from keras.layers import Input, LSTM, Dense, Embedding
 from keras.preprocessing.sequence import pad_sequences
 from qa_system_web.squad_dataset import SquADDataSet
+import qa_system_web.text_utils as text_utils
 import numpy as np
 import nltk
 
 HIDDEN_UNITS = 256
-WHITE_LIST = 'abcdefghijklmnopqrstuvwxyz1234567890?.,'
 MODEL_DIR_PATH = '../qa_system_train/models/SQuAD'
-
-
-def in_white_list(_word):
-    for char in _word:
-        if char in WHITE_LIST:
-            return True
-
-    return False
 
 
 class SQuADSeq2SeqModel(object):
@@ -80,7 +72,7 @@ class SQuADSeq2SeqModel(object):
         input_wids = []
         input_text = paragraph.lower() + ' Q ' + question.lower()
         for word in nltk.word_tokenize(input_text):
-            if word != 'Q' and (not in_white_list(word)):
+            if word != 'Q' and (not text_utils.in_white_list(word)):
                 continue
             idx = 1  # default [UNK]
             if word in self.input_word2idx:

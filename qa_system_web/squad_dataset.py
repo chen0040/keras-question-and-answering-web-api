@@ -1,24 +1,13 @@
 import json
 import nltk
-from collections import Counter
-import numpy as np
-from sklearn.model_selection import train_test_split
+from qa_system_web.text_utils import in_white_list
 
 DATA_PATH = '../qa_system_train/data/SQuAD/train-v1.1.json'
-WHITE_LIST = 'abcdefghijklmnopqrstuvwxyz1234567890,.?'
 MAX_CONTEXT_SEQ_LENGTH = 300
 MAX_QUESTION_SEQ_LENGTH = 60
 MAX_TARGET_SEQ_LENGTH = 50
 MAX_VOCAB_SIZE = 5000
 MAX_DATA_COUNT = 5000
-
-
-def in_white_list(_word):
-    for char in _word:
-        if char in WHITE_LIST:
-            return True
-
-    return False
 
 
 class SquADDataSet(object):
