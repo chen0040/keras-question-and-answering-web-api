@@ -1,12 +1,13 @@
 import numpy as np
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Dense, Input
+from keras.layers import add, Dropout, RepeatVector
 from keras.layers.recurrent import LSTM
 from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
 
 from qa_system_train.glove_loader import Glove
-from qa_system_train.squad_dataset import SquADDataSet, SQuADSeq2SeqEmbTupleSamples
+from qa_system_train.squad_dataset import SquADDataSet, SQuADSeq2SeqEmbTripleSamples
 
 np.random.seed(42)
 
@@ -15,14 +16,14 @@ NUM_EPOCHS = 100
 HIDDEN_UNITS = 256
 DATA_SET_NAME = 'SQuAD'
 MODEL_DIR_PATH = 'models/' + DATA_SET_NAME
-WEIGHT_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-glove-weights.h5'
-ARCHITECTURE_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-glove-architecture.json'
+WEIGHT_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-glove-v2-weights.h5'
+ARCHITECTURE_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-glove-v2-architecture.json'
 
 glove = Glove()
 
 dataset = SquADDataSet(10000)
-dataset_seq2seq = SQuADSeq2SeqEmbTupleSamples(dataset, glove.word2em, glove.GLOVE_EMBEDDING_SIZE)
-dataset_seq2seq.save(MODEL_DIR_PATH, 'glove')
+dataset_seq2seq = SQuADSeq2SeqEmbTripleSamples(dataset, glove.word2em, glove.GLOVE_EMBEDDING_SIZE)
+dataset_seq2seq.save(MODEL_DIR_PATH, 'glove-v2')
 
 
 def generate_batch(ds, input_word2em_data, output_data):
@@ -31,7 +32,15 @@ def generate_batch(ds, input_word2em_data, output_data):
         for batchIdx in range(0, num_batches):
             start = batchIdx * BATCH_SIZE
             end = (batchIdx + 1) * BATCH_SIZE
-            encoder_input_data_batch = pad_sequences(input_word2em_data[start:end], ds.input_max_seq_length)
+            encoder_input_paragraph_data_batch = []
+            encoder_input_question_data_batch = []
+            for input_paragraph_data, input_question_data in input_word2em_data[start:end]:
+                encoder_input_paragraph_data_batch.append(input_paragraph_data)
+                encoder_input_question_data_batch.append(input_question_data)
+            encoder_input_paragraph_data_batch = pad_sequences(encoder_input_paragraph_data_batch,
+                                                               ds.input_paragraph_max_seq_length)
+            encoder_input_question_data_batch = pad_sequences(encoder_input_question_data_batch,
+                                                              ds.input_question_max_seq_length)
             decoder_target_data_batch = np.zeros(shape=(BATCH_SIZE, ds.target_max_seq_length, ds.num_target_tokens))
             decoder_input_data_batch = np.zeros(shape=(BATCH_SIZE, ds.target_max_seq_length, ds.num_target_tokens))
             for lineIdx, target_wid_list in enumerate(output_data[start:end]):
@@ -41,12 +50,22 @@ def generate_batch(ds, input_word2em_data, output_data):
                     decoder_input_data_batch[lineIdx, idx, wid] = 1
                     if idx > 0:
                         decoder_target_data_batch[lineIdx, idx - 1, wid] = 1
-            yield [encoder_input_data_batch, decoder_input_data_batch], decoder_target_data_batch
+            yield [encoder_input_paragraph_data_batch, encoder_input_question_data_batch, decoder_input_data_batch], \
+                  decoder_target_data_batch
 
 
-encoder_inputs = Input(shape=(None, glove.GLOVE_EMBEDDING_SIZE), name='encoder_inputs')
-encoder_lstm = LSTM(units=HIDDEN_UNITS, return_state=True, name='encoder_lstm')
-encoder_outputs, encoder_state_h, encoder_state_c = encoder_lstm(encoder_inputs)
+context_inputs = Input(shape=(None, glove.GLOVE_EMBEDDING_SIZE), name='context_inputs')
+encoded_context = Dropout(0.3)(context_inputs)
+
+question_inputs = Input(shape=(None, glove.GLOVE_EMBEDDING_SIZE), name='question_inputs')
+encoded_question = Dropout(0.3)(question_inputs)
+encoded_question = LSTM(units=glove.GLOVE_EMBEDDING_SIZE, name='question_lstm')(encoded_question)
+encoded_question = RepeatVector(dataset_seq2seq.input_paragraph_max_seq_length)(encoded_question)
+
+merged = add([encoded_context, encoded_question])
+encoder_outputs, encoder_state_h, encoder_state_c = LSTM(units=HIDDEN_UNITS,
+                                                         name='encoder_lstm', return_state=True)(merged)
+
 encoder_states = [encoder_state_h, encoder_state_c]
 
 decoder_inputs = Input(shape=(None, dataset_seq2seq.num_target_tokens), name='decoder_inputs')
@@ -56,7 +75,7 @@ decoder_outputs, decoder_state_h, decoder_state_c = decoder_lstm(decoder_inputs,
 decoder_dense = Dense(units=dataset_seq2seq.num_target_tokens, activation='softmax', name='decoder_dense')
 decoder_outputs = decoder_dense(decoder_outputs)
 
-model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
+model = Model([context_inputs, question_inputs, decoder_inputs], decoder_outputs)
 
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 

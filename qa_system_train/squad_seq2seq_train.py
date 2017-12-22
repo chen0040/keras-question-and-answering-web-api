@@ -3,7 +3,7 @@ from keras.layers.recurrent import LSTM
 from keras.layers import Dense, Input, Embedding
 from keras.preprocessing.sequence import pad_sequences
 from keras.callbacks import ModelCheckpoint
-from qa_system_train.squad_dataset import SquADDataSet, SQuADSeq2Seq
+from qa_system_train.squad_dataset import SquADDataSet, SQuADSeq2SeqTupleSamples
 import numpy as np
 
 np.random.seed(42)
@@ -19,7 +19,7 @@ WEIGHT_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-weights.h5'
 
 
 dataset = SquADDataSet(10000)
-dataset_seq2seq = SQuADSeq2Seq(dataset)
+dataset_seq2seq = SQuADSeq2SeqTupleSamples(dataset)
 dataset_seq2seq.save(MODEL_DIR_PATH)
 
 
