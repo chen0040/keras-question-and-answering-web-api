@@ -3,20 +3,21 @@ from keras.layers.recurrent import LSTM
 from keras.layers import Dense, Input, Embedding
 from keras.preprocessing.sequence import pad_sequences
 from keras.callbacks import ModelCheckpoint
-from qa_system_train.squad_dataset import SquADDataSet, SQuADSeq2SeqTupleSamples
+from qa_system_train.squad_dataset import SquADDataSet, SQuADSeq2SeqTripleSamples
 import numpy as np
 
 np.random.seed(42)
 
 BATCH_SIZE = 64
 NUM_EPOCHS = 100
-MAX_VOCAB_SIZE = 600
+HIDDEN_UNITS = 256
 MODEL_DIR_PATH = 'models/SQuAD'
-WEIGHT_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-weights.h5'
+WEIGHT_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-v2-weights.h5'
+ARCHITECTURE_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-v2-architecture.json'
 
 
 dataset = SquADDataSet(10000)
-dataset_seq2seq = SQuADSeq2SeqTupleSamples(dataset)
+dataset_seq2seq = SQuADSeq2SeqTripleSamples(dataset)
 dataset_seq2seq.save(MODEL_DIR_PATH)
 
 
@@ -42,11 +43,22 @@ def generate_batch(ds, input_data, target_data):
             yield [encoder_input_data_batch, decoder_input_data_batch], decoder_target_data_batch
 
 
-encoder_inputs = Input(shape=(None,), name='encoder_inputs')
-encoder_embedding = Embedding(input_dim=dataset_seq2seq.num_input_tokens, output_dim=HIDDEN_UNITS,
-                              input_length=dataset_seq2seq.input_max_seq_length, name='encoder_embedding')
+context_inputs = Input(shape=(None,), name='context_inputs')
+encoded_context = Embedding(input_dim=num_context_tokens, output_dim=glove.EMBED_HIDDEN_UNITS,
+                            input_length=context_max_seq_length, name='context_embedding')(context_inputs)
+encoded_context = Dropout(0.3)(encoded_context)
+
+question_inputs = Input(shape=(None,), name='question_inputs')
+encoded_question = Embedding(input_dim=num_question_tokens, output_dim=glove.EMBED_HIDDEN_UNITS,
+                             input_length=question_max_seq_length, name='question_embedding')(question_inputs)
+encoded_question = Dropout(0.3)(encoded_question)
+encoded_question = LSTM(units=glove.EMBED_HIDDEN_UNITS, name='question_lstm')(encoded_question)
+encoded_question = RepeatVector(context_max_seq_length)(encoded_question)
+
+merged = add([encoded_context, encoded_question])
+
 encoder_lstm = LSTM(units=HIDDEN_UNITS, return_state=True, name='encoder_lstm')
-encoder_outputs, encoder_state_h, encoder_state_c = encoder_lstm(encoder_embedding(encoder_inputs))
+encoder_outputs, encoder_state_h, encoder_state_c = encoder_lstm(merged)
 encoder_states = [encoder_state_h, encoder_state_c]
 
 decoder_inputs = Input(shape=(None, dataset_seq2seq.num_target_tokens), name='decoder_inputs')
@@ -61,7 +73,7 @@ model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
 json = model.to_json()
-open(MODEL_DIR_PATH + '/seq2seq-architecture.json', 'w').write(json)
+open(ARCHITECTURE_FILE_PATH, 'w').write(json)
 
 Xtrain, Xtest, Ytrain, Ytest = dataset_seq2seq.split(test_size=0.2, random_state=42)
 
