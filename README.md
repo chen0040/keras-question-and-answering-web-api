@@ -1,3 +1,3 @@
 # keras-question-and-answering-web-api
 
-Simple automatic answering system developed using seq2seq model in Keras
+Question answering system developed using seq2seq and dynamic memory network model in Keras

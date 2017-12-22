@@ -1,6 +1,6 @@
 import nltk
 import numpy as np
-from keras.layers import Input, LSTM, Dense
+from keras.layers import Input, LSTM, Dense, Dropout, add, RepeatVector
 from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
 from qa_system_web.text_utils import in_white_list
@@ -41,25 +41,35 @@ class SQuADSeq2SeqGloveV2Model(object):
         self.max_decoder_seq_length = context['target_max_seq_length']
         self.num_decoder_tokens = context['num_target_tokens']
 
-        encoder_inputs = Input(shape=(None, glove_loader.GLOVE_EMBEDDING_SIZE), name='encoder_inputs')
-        encoder_lstm = LSTM(units=HIDDEN_UNITS, return_state=True, name="encoder_lstm")
-        encoder_outputs, encoder_state_h, encoder_state_c = encoder_lstm(encoder_inputs)
+        context_inputs = Input(shape=(None, glove_loader.GLOVE_EMBEDDING_SIZE), name='context_inputs')
+        encoded_context = Dropout(0.3)(context_inputs)
+
+        question_inputs = Input(shape=(None, glove_loader.GLOVE_EMBEDDING_SIZE), name='question_inputs')
+        encoded_question = Dropout(0.3)(question_inputs)
+        encoded_question = LSTM(units=glove_loader.GLOVE_EMBEDDING_SIZE, name='question_lstm')(encoded_question)
+        encoded_question = RepeatVector(self.max_encoder_paragraph_seq_length)(encoded_question)
+
+        merged = add([encoded_context, encoded_question])
+        encoder_outputs, encoder_state_h, encoder_state_c = LSTM(units=HIDDEN_UNITS,
+                                                                 name='encoder_lstm', return_state=True)(merged)
+
         encoder_states = [encoder_state_h, encoder_state_c]
 
         decoder_inputs = Input(shape=(None, self.num_decoder_tokens), name='decoder_inputs')
-        decoder_lstm = LSTM(units=HIDDEN_UNITS, return_sequences=True, return_state=True, name='decoder_lstm')
-        decoder_outputs, _, _ = decoder_lstm(decoder_inputs, initial_state=encoder_states)
-        decoder_dense = Dense(self.num_decoder_tokens, activation='softmax', name='decoder_dense')
+        decoder_lstm = LSTM(units=HIDDEN_UNITS, return_state=True, return_sequences=True, name='decoder_lstm')
+        decoder_outputs, decoder_state_h, decoder_state_c = decoder_lstm(decoder_inputs,
+                                                                         initial_state=encoder_states)
+        decoder_dense = Dense(units=self.num_decoder_tokens, activation='softmax', name='decoder_dense')
         decoder_outputs = decoder_dense(decoder_outputs)
 
-        self.model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
+        self.model = Model([context_inputs, question_inputs, decoder_inputs], decoder_outputs)
 
-        # model_json = open(MODEL_DIR_PATH + '/seq2seq-glove-architecture.json', 'r').read()
+        # model_json = open(MODEL_DIR_PATH + '/' + name + '-architecture.json', 'r').read()
         # self.model = model_from_json(model_json)
         self.model.load_weights(MODEL_DIR_PATH + '/' + name + '-weights.h5')
         self.model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
 
-        self.encoder_model = Model(encoder_inputs, encoder_states)
+        self.encoder_model = Model([context_inputs, question_inputs], encoder_states)
 
         decoder_state_inputs = [Input(shape=(HIDDEN_UNITS,)), Input(shape=(HIDDEN_UNITS,))]
         decoder_outputs, state_h, state_c = decoder_lstm(decoder_inputs, initial_state=decoder_state_inputs)
