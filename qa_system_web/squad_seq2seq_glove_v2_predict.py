@@ -28,8 +28,6 @@ class SQuADSeq2SeqGloveV2Model(object):
     def __init__(self):
         name = 'seq2seq-glove-v2'
         self.word2em = glove_loader.load_glove()
-        print(len(self.word2em))
-        print(self.word2em['start'])
 
         self.target_word2idx = np.load(
             MODEL_DIR_PATH + '/' + name + '-target-word2idx.npy').item()

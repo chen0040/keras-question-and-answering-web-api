@@ -26,8 +26,6 @@ class SQuADSeq2SeqGloveModel(object):
     def __init__(self):
         name = 'seq2seq-glove'
         self.word2em = glove_loader.load_glove()
-        print(len(self.word2em))
-        print(self.word2em['start'])
 
         self.target_word2idx = np.load(
             MODEL_DIR_PATH + '/' + name + '-target-word2idx.npy').item()
@@ -51,7 +49,7 @@ class SQuADSeq2SeqGloveModel(object):
 
         self.model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
 
-        # model_json = open(MODEL_DIR_PATH + '/seq2seq-glove-architecture.json', 'r').read()
+        # model_json = open(MODEL_DIR_PATH + '/' + name + '-architecture.json', 'r').read()
         # self.model = model_from_json(model_json)
         self.model.load_weights(MODEL_DIR_PATH + '/' + name + '-weights.h5')
         self.model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
