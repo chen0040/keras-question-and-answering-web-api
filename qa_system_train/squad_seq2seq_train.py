@@ -9,6 +9,7 @@ import numpy as np
 np.random.seed(42)
 
 BATCH_SIZE = 64
+HIDDEN_UNITS = 256
 NUM_EPOCHS = 100
 MAX_VOCAB_SIZE = 600
 MODEL_DIR_PATH = 'models/SQuAD'
