@@ -14,7 +14,7 @@ The implemented models include:
 
 * [seq2seq.py](keras_question_and_answering_system/library/seq2seq.py): one-hot encoding input that is paragraph_context + ' Q ' + question
 * [seq2seq_v2.py](keras_question_and_answering_system/library/seq2seq_v2.py): one-hot encoding input that is add(paragraph_context, RepeatVector(LSTM(question))) 
-* [seq2seq_glove.py](keras_question_and_answering_system/library/seq2seq_glove.py)): GloVe encoding input that is paragraph_context + ' Q ' + question
+* [seq2seq_glove.py](keras_question_and_answering_system/library/seq2seq_glove.py): GloVe encoding input that is paragraph_context + ' Q ' + question
 * [seq2seq_v2_glove.py](keras_question_and_answering_system/library/seq2seq_v2_glove.py): GloVe encoding input that is add(paragraph_context, RepeatVector(LSTM(question)))
 
  

@@ -197,7 +197,8 @@ class Seq2SeqV2QA(object):
         # print({'context': paragraph, 'question': question})
         print({'predict': predicted_answer, 'actual': actual_answer})
 
-    def fit(self, data_set, model_dir_path, epochs=None, batch_size=None, test_size=None, random_state=None):
+    def fit(self, data_set, model_dir_path, epochs=None, batch_size=None, test_size=None, random_state=None,
+            save_best_only=False, max_input_vocab_size=None, max_target_vocab_size=None):
         if batch_size is None:
             batch_size = 64
         if epochs is None:
@@ -206,8 +207,13 @@ class Seq2SeqV2QA(object):
             test_size = 0.2
         if random_state is None:
             random_state = 42
+        if max_input_vocab_size is None:
+            max_input_vocab_size = 5000
+        if max_target_vocab_size is None:
+            max_target_vocab_size = 5000
 
-        data_set_seq2seq = Seq2SeqTripleSamples(data_set)
+        data_set_seq2seq = Seq2SeqTripleSamples(data_set, max_input_vocab_size=max_input_vocab_size,
+                                                max_target_vocab_size=max_target_vocab_size)
         data_set_seq2seq.save(model_dir_path, 'qa-v2')
 
         x_train, x_test, y_train, y_test = data_set_seq2seq.split(test_size=test_size, random_state=random_state)
@@ -236,7 +242,7 @@ class Seq2SeqV2QA(object):
         train_num_batches = len(x_train) // batch_size
         test_num_batches = len(x_test) // batch_size
 
-        checkpoint = ModelCheckpoint(filepath=weight_file_path, save_best_only=True)
+        checkpoint = ModelCheckpoint(filepath=weight_file_path, save_best_only=save_best_only)
 
         history = self.model.fit_generator(generator=train_gen, steps_per_epoch=train_num_batches,
                                            epochs=epochs,

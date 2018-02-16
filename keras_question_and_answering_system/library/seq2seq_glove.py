@@ -93,7 +93,8 @@ class Seq2SeqGloveQA(object):
         decoder_outputs = decoder_dense(decoder_outputs)
         self.decoder_model = Model([decoder_inputs] + decoder_state_inputs, [decoder_outputs] + decoder_states)
 
-    def fit(self, data_set, model_dir_path, epochs=None, batch_size=None, test_size=None, random_state=None):
+    def fit(self, data_set, model_dir_path, epochs=None, batch_size=None, test_size=None, random_state=None,
+            save_best_only=False, max_target_vocab_size=None):
         if batch_size is None:
             batch_size = 64
         if epochs is None:
@@ -102,9 +103,12 @@ class Seq2SeqGloveQA(object):
             test_size = 0.2
         if random_state is None:
             random_state = 42
+        if max_target_vocab_size is None:
+            max_target_vocab_size = 5000
 
         data_set_seq2seq = SQuADSeq2SeqEmbTupleSamples(data_set, self.glove_model.word2em,
-                                                       self.glove_model.embedding_size)
+                                                       self.glove_model.embedding_size,
+                                                       max_target_vocab_size=max_target_vocab_size)
         data_set_seq2seq.save(model_dir_path, 'qa-glove')
 
         x_train, x_test, y_train, y_test = data_set_seq2seq.split(test_size=test_size, random_state=random_state)
@@ -130,7 +134,7 @@ class Seq2SeqGloveQA(object):
         train_num_batches = len(x_train) // batch_size
         test_num_batches = len(x_test) // batch_size
 
-        checkpoint = ModelCheckpoint(filepath=weight_file_path, save_best_only=True)
+        checkpoint = ModelCheckpoint(filepath=weight_file_path, save_best_only=save_best_only)
 
         history = self.model.fit_generator(generator=train_gen, steps_per_epoch=train_num_batches,
                                            epochs=epochs,
