@@ -1,4 +1,4 @@
-from flask import Flask, request, send_from_directory, redirect, render_template, flash, url_for
+from flask import Flask, request, redirect, render_template, flash
 from qa_system_web.squad_seq2seq_predict import SQuADSeq2SeqModel
 
 app = Flask(__name__)

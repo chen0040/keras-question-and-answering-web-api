@@ -105,7 +105,11 @@ class SQuADSeq2SeqModel(object):
             states_value = [h, c]
         return target_text.strip()
 
-    def test_run(self, ds, index):
+    def test_run(self, ds=None, index=None):
+        if ds is None:
+            ds = SquADDataSet()
+        if index is None:
+            index = 0
         paragraph, question, actual_answer = ds.get_data(index)
         predicted_answer = self.reply(paragraph, question)
         # print({'context': paragraph, 'question': question})
