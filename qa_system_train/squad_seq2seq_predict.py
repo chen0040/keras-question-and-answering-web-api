@@ -1,13 +1,14 @@
-from keras.models import Model, model_from_json
+from keras.models import Model
 from keras.layers import Input, LSTM, Dense, Embedding
 from keras.preprocessing.sequence import pad_sequences
-from qa_system_web.squad_dataset import SquADDataSet
-import qa_system_web.text_utils as text_utils
 import numpy as np
 import nltk
 
+from qa_system_train import text_utils
+from qa_system_train.squad_dataset import SquADDataSet
+
 HIDDEN_UNITS = 256
-MODEL_DIR_PATH = '../qa_system_train/models/SQuAD'
+MODEL_DIR_PATH = './models/SQuAD'
 
 
 class SQuADSeq2SeqModel(object):
