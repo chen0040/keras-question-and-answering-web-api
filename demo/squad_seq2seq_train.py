@@ -1,5 +1,5 @@
 from keras_question_and_answering_system.library.seq2seq import Seq2SeqQA
-from keras_question_and_answering_system.library.utility.squad_data_set import SquADDataSet
+from keras_question_and_answering_system.library.utility.squad import SquADDataSet
 import numpy as np
 
 

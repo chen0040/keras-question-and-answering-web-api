@@ -138,11 +138,11 @@ class SQuADSeq2SeqEmbTupleSamples(object):
 
     data_set = None
 
-    def __init__(self, dataset, word2emb, embed_size, max_target_vocab_size=None):
+    def __init__(self, data_set, word2emb, embed_size, max_target_vocab_size=None):
         if max_target_vocab_size is None:
             max_target_vocab_size = 5000
 
-        self.data_set = dataset
+        self.data_set = data_set
         self.word2emb = word2emb
         self.input_data_samples = []
         self.output_data_samples = []

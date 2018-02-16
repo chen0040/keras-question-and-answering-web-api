@@ -1,15 +1,36 @@
+from keras.callbacks import ModelCheckpoint
 from keras.models import Model
 from keras.layers import Input, LSTM, Dense
 from keras.preprocessing.sequence import pad_sequences
 import numpy as np
 import nltk
-
+import os 
 from keras_question_and_answering_system.library.utility.glove_model import GloveModel
+from keras_question_and_answering_system.library.utility.qa_embed_data_utils import SQuADSeq2SeqEmbTupleSamples
 from keras_question_and_answering_system.library.utility.text_utils import in_white_list
 
 
+def generate_batch(ds, input_word2em_data, output_data, batch_size):
+    num_batches = len(input_word2em_data) // batch_size
+    while True:
+        for batchIdx in range(0, num_batches):
+            start = batchIdx * batch_size
+            end = (batchIdx + 1) * batch_size
+            encoder_input_data_batch = pad_sequences(input_word2em_data[start:end], ds.input_max_seq_length)
+            decoder_target_data_batch = np.zeros(shape=(batch_size, ds.target_max_seq_length, ds.num_target_tokens))
+            decoder_input_data_batch = np.zeros(shape=(batch_size, ds.target_max_seq_length, ds.num_target_tokens))
+            for lineIdx, target_wid_list in enumerate(output_data[start:end]):
+                for idx, wid in enumerate(target_wid_list):
+                    if wid == 0:  # UNKNOWN
+                        continue
+                    decoder_input_data_batch[lineIdx, idx, wid] = 1
+                    if idx > 0:
+                        decoder_target_data_batch[lineIdx, idx - 1, wid] = 1
+            yield [encoder_input_data_batch, decoder_input_data_batch], decoder_target_data_batch
+
+
 class Seq2SeqGloveQA(object):
-    name = 'seq2seq-glove'
+    model_name = 'seq2seq-qa-glove'
 
     def __init__(self):
         self.model = None
@@ -22,22 +43,30 @@ class Seq2SeqGloveQA(object):
         self.num_decoder_tokens = None
         self.glove_model = None
 
+    @staticmethod
+    def get_architecture_file_path(model_dir_path):
+        return os.path.join(model_dir_path, Seq2SeqGloveQA.model_name + '-architecture.json')
+
+    @staticmethod
+    def get_weight_file_path(model_dir_path):
+        return os.path.join(model_dir_path, Seq2SeqGloveQA.model_name + '-weights.h5')
+
     def load_glove_model(self, data_dir_path):
         self.glove_model = GloveModel()
         self.glove_model.load_model(data_dir_path)
 
     def load_model(self, model_dir_path):
         self.target_word2idx = np.load(
-            model_dir_path + '/' + Seq2SeqGloveQA.name + '-target-word2idx.npy').item()
+            model_dir_path + '/' + Seq2SeqGloveQA.model_name + '-target-word2idx.npy').item()
         self.target_idx2word = np.load(
-            model_dir_path + '/' + Seq2SeqGloveQA.name + '-target-idx2word.npy').item()
-        context = np.load(model_dir_path + '/' + Seq2SeqGloveQA.name + '-config.npy').item()
+            model_dir_path + '/' + Seq2SeqGloveQA.model_name + '-target-idx2word.npy').item()
+        context = np.load(model_dir_path + '/' + Seq2SeqGloveQA.model_name + '-config.npy').item()
         self.max_encoder_seq_length = context['input_max_seq_length']
         self.max_decoder_seq_length = context['target_max_seq_length']
         self.num_decoder_tokens = context['num_target_tokens']
 
         self.create_model()
-        self.model.load_weights(model_dir_path + '/' + Seq2SeqGloveQA.name + '-weights.h5')
+        self.model.load_weights(model_dir_path + '/' + Seq2SeqGloveQA.model_name + '-weights.h5')
 
     def create_model(self):
         hidden_units = 256
@@ -64,6 +93,54 @@ class Seq2SeqGloveQA(object):
         decoder_states = [state_h, state_c]
         decoder_outputs = decoder_dense(decoder_outputs)
         self.decoder_model = Model([decoder_inputs] + decoder_state_inputs, [decoder_outputs] + decoder_states)
+
+    def fit(self, data_set, model_dir_path, epochs=None, batch_size=None, test_size=None, random_state=None):
+        if batch_size is None:
+            batch_size = 64
+        if epochs is None:
+            epochs = 100
+        if test_size is None:
+            test_size = 0.2
+        if random_state is None:
+            random_state = 42
+
+        data_set_seq2seq = SQuADSeq2SeqEmbTupleSamples(data_set, self.glove_model.word2em,
+                                                       self.glove_model.embedding_size)
+        data_set_seq2seq.save(model_dir_path, 'qa-glove')
+
+        x_train, x_test, y_train, y_test = data_set_seq2seq.split(test_size=test_size, random_state=random_state)
+
+        print(len(x_train))
+        print(len(x_test))
+
+        self.max_encoder_seq_length = data_set_seq2seq.input_max_seq_length
+        self.max_decoder_seq_length = data_set_seq2seq.target_max_seq_length
+        self.num_decoder_tokens = data_set_seq2seq.num_target_tokens
+
+        weight_file_path = self.get_weight_file_path(model_dir_path)
+        architecture_file_path = self.get_architecture_file_path(model_dir_path)
+
+        self.create_model()
+
+        with open(architecture_file_path, 'w') as f:
+            f.write(self.model.to_json())
+
+        train_gen = generate_batch(data_set_seq2seq, x_train, y_train, batch_size)
+        test_gen = generate_batch(data_set_seq2seq, x_test, y_test, batch_size)
+
+        train_num_batches = len(x_train) // batch_size
+        test_num_batches = len(x_test) // batch_size
+
+        checkpoint = ModelCheckpoint(filepath=weight_file_path, save_best_only=True)
+
+        history = self.model.fit_generator(generator=train_gen, steps_per_epoch=train_num_batches,
+                                           epochs=epochs,
+                                           verbose=1, validation_data=test_gen, validation_steps=test_num_batches,
+                                           callbacks=[checkpoint])
+
+        self.model.save_weights(weight_file_path)
+
+        return history
 
     def reply(self, paragraph, question):
         input_seq = []

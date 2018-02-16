@@ -7,7 +7,7 @@ from keras.callbacks import ModelCheckpoint
 import os
 
 from keras_question_and_answering_system.library.utility import text_utils
-from keras_question_and_answering_system.library.utility.squad_data_set import Seq2SeqTupleSamples
+from keras_question_and_answering_system.library.utility.squad import Seq2SeqTupleSamples
 import numpy as np
 
 

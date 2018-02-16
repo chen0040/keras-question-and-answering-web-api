@@ -150,13 +150,13 @@ class Seq2SeqTripleSamples(object):
 
     data_set = None
 
-    def __init__(self, dataset, max_input_vocab_size=None, max_target_vocab_size=None):
+    def __init__(self, data_set, max_input_vocab_size=None, max_target_vocab_size=None):
         if max_input_vocab_size is None:
             max_input_vocab_size = 5000
         if max_target_vocab_size is None:
             max_target_vocab_size = 5000
 
-        self.data_set = dataset
+        self.data_set = data_set
         self.input_data_samples = []
         self.output_data_samples = []
 
