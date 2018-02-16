@@ -6,9 +6,9 @@ from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
 from keras_question_and_answering_system.library.utility.glove_model import GloveModel
 from keras_question_and_answering_system.library.utility.qa_embed_data_utils import SQuADSeq2SeqEmbTripleSamples
-from qa_system_web.text_utils import in_white_list
-import qa_system_web.glove_loader as glove_loader
 import os
+
+from keras_question_and_answering_system.library.utility.text_utils import in_white_list
 
 
 def generate_batch(ds, input_word2em_data, output_data, batch_size):
@@ -85,9 +85,9 @@ class Seq2SeqV2GloveQA(object):
         context_inputs = Input(shape=(None, self.glove_model.embedding_size), name='context_inputs')
         encoded_context = Dropout(0.3)(context_inputs)
 
-        question_inputs = Input(shape=(None, glove_loader.GLOVE_EMBEDDING_SIZE), name='question_inputs')
+        question_inputs = Input(shape=(None, self.glove_model.embedding_size), name='question_inputs')
         encoded_question = Dropout(0.3)(question_inputs)
-        encoded_question = LSTM(units=glove_loader.GLOVE_EMBEDDING_SIZE, name='question_lstm')(encoded_question)
+        encoded_question = LSTM(units=self.glove_model.embedding_size, name='question_lstm')(encoded_question)
         encoded_question = RepeatVector(self.max_encoder_paragraph_seq_length)(encoded_question)
 
         merged = add([encoded_context, encoded_question])

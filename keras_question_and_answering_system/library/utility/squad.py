@@ -1,6 +1,6 @@
 import json
 import nltk
-from qa_system_train.text_utils import in_white_list
+from experiments.text_utils import in_white_list
 
 
 class SquADDataSet(object):

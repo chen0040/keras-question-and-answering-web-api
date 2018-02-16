@@ -3,8 +3,8 @@ from keras.models import Model
 from keras.layers import Input, LSTM, Dense, Embedding, Dropout, add, RepeatVector
 from keras.preprocessing.sequence import pad_sequences
 
+from keras_question_and_answering_system.library.utility import text_utils
 from keras_question_and_answering_system.library.utility.qa_data_utils import Seq2SeqTripleSamples
-import qa_system_web.text_utils as text_utils
 import numpy as np
 import nltk
 import os

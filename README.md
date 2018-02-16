@@ -64,7 +64,7 @@ Once the trained models are generated. the predictors in the [demo/models](demo/
 
 ## Running Web Api Server (WIP)
 
-Goto qa_system_web directory and run the following command:
+Goto [demo_web](demo_web) directory and run the following command:
 
 ```bash
 python flaskr.py

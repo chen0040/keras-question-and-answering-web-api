@@ -1,5 +1,6 @@
 from flask import Flask, request, redirect, render_template, flash
-from qa_system_train.squad_seq2seq_predict import SQuADSeq2SeqModel
+from keras_question_and_answering_system.library.seq2seq import Seq2SeqQA
+from keras_question_and_answering_system.library.utility.squad import SquADDataSet
 
 app = Flask(__name__)
 app.config.from_object(__name__)  # load config from this file , flaskr.py
@@ -8,7 +9,7 @@ app.config.from_object(__name__)  # load config from this file , flaskr.py
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-squad_s2s_qa = SQuADSeq2SeqModel()
+squad_s2s_qa = Seq2SeqQA()
 
 
 @app.route('/')
@@ -40,7 +41,9 @@ def squad_qa():
 
 
 def main():
-    squad_s2s_qa.test_run()
+    data_set = SquADDataSet(data_path='../demo/data/SQuAD/train-v1.1.json')
+    squad_s2s_qa.load_model(model_dir_path='../demo/models')
+    squad_s2s_qa.test_run(data_set)
     app.run(debug=True)
 
 

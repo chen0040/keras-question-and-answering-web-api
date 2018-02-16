@@ -1,8 +1,8 @@
 from setuptools import setup
 
 setup(
-    name='qa_system_web',
-    packages=['qa_system_web'],
+    name='keras_question_and_answering_system',
+    packages=['keras_question_and_answering_system'],
     include_package_data=True,
     install_requires=[
         'flask',
