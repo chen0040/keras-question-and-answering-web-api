@@ -1,4 +1,4 @@
-from keras_question_and_answering_system.library.seq2seq_glove import Seq2SeqGloveQA
+from keras_question_and_answering_system.library.seq2seq_v2 import Seq2SeqV2QA
 from keras_question_and_answering_system.library.utility.squad import SquADDataSet
 import numpy as np
 
@@ -10,8 +10,7 @@ def main():
     np.random.seed(random_state)
     data_set = SquADDataSet(data_path='./data/SQuAD/train-v1.1.json')
 
-    qa = Seq2SeqGloveQA()
-    qa.load_glove_model('./very_large_data')
+    qa = Seq2SeqV2QA()
     batch_size = 64
     epochs = 1000
     history = qa.fit(data_set, model_dir_path=output_dir_path,

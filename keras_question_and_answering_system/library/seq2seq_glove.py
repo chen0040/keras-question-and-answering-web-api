@@ -4,7 +4,7 @@ from keras.layers import Input, LSTM, Dense
 from keras.preprocessing.sequence import pad_sequences
 import numpy as np
 import nltk
-import os 
+import os
 from keras_question_and_answering_system.library.utility.glove_model import GloveModel
 from keras_question_and_answering_system.library.utility.qa_embed_data_utils import SQuADSeq2SeqEmbTupleSamples
 from keras_question_and_answering_system.library.utility.text_utils import in_white_list
