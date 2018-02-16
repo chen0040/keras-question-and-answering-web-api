@@ -7,12 +7,8 @@ from keras.callbacks import ModelCheckpoint
 import os
 
 from keras_question_and_answering_system.library.utility import text_utils
-from keras_question_and_answering_system.library.utility.squad_data_set import SQuADSeq2SeqTupleSamples
+from keras_question_and_answering_system.library.utility.squad_data_set import Seq2SeqTupleSamples
 import numpy as np
-
-np.random.seed(42)
-
-MAX_VOCAB_SIZE = 600
 
 
 def generate_batch(ds, input_data, target_data, batch_size):
@@ -118,7 +114,7 @@ class Seq2SeqQA(object):
         self.encoder_model = encoder_model
         self.model.load_weights(weight_file_path)
 
-    def fit(self, dataset, model_dir_path, epochs=None, batch_size=None, test_size=None, random_state=None):
+    def fit(self, data_set, model_dir_path, epochs=None, batch_size=None, test_size=None, random_state=None):
         if batch_size is None:
             batch_size = 64
         if epochs is None:
@@ -128,18 +124,18 @@ class Seq2SeqQA(object):
         if random_state is None:
             random_state = 42
 
-        dataset_seq2seq = SQuADSeq2SeqTupleSamples(dataset)
-        dataset_seq2seq.save(model_dir_path, 'qa')
+        data_set_seq2seq = Seq2SeqTupleSamples(data_set)
+        data_set_seq2seq.save(model_dir_path, 'qa')
 
-        Xtrain, Xtest, Ytrain, Ytest = dataset_seq2seq.split(test_size=test_size, random_state=random_state)
+        x_train, x_test, y_train, y_test = data_set_seq2seq.split(test_size=test_size, random_state=random_state)
 
-        print(len(Xtrain))
-        print(len(Xtest))
+        print(len(x_train))
+        print(len(x_test))
 
-        self.max_encoder_seq_length = dataset_seq2seq.input_max_seq_length
-        self.max_decoder_seq_length = dataset_seq2seq.target_max_seq_length
-        self.num_encoder_tokens = dataset_seq2seq.num_input_tokens
-        self.num_decoder_tokens = dataset_seq2seq.num_target_tokens
+        self.max_encoder_seq_length = data_set_seq2seq.input_max_seq_length
+        self.max_decoder_seq_length = data_set_seq2seq.target_max_seq_length
+        self.num_encoder_tokens = data_set_seq2seq.num_input_tokens
+        self.num_decoder_tokens = data_set_seq2seq.num_target_tokens
 
         weight_file_path = self.get_weight_file_path(model_dir_path)
         architecture_file_path = self.get_architecture_file_path(model_dir_path)
@@ -153,11 +149,11 @@ class Seq2SeqQA(object):
         with open(architecture_file_path, 'w') as f:
             f.write(self.model.to_json())
 
-        train_gen = generate_batch(dataset_seq2seq, Xtrain, Ytrain, batch_size)
-        test_gen = generate_batch(dataset_seq2seq, Xtest, Ytest, batch_size)
+        train_gen = generate_batch(data_set_seq2seq, x_train, y_train, batch_size)
+        test_gen = generate_batch(data_set_seq2seq, x_test, y_test, batch_size)
 
-        train_num_batches = len(Xtrain) // batch_size
-        test_num_batches = len(Xtest) // batch_size
+        train_num_batches = len(x_train) // batch_size
+        test_num_batches = len(x_test) // batch_size
 
         checkpoint = ModelCheckpoint(filepath=weight_file_path, save_best_only=True)
 
@@ -215,7 +211,3 @@ class Seq2SeqQA(object):
         predicted_answer = self.reply(paragraph, question)
         # print({'context': paragraph, 'question': question})
         print({'predict': predicted_answer, 'actual': actual_answer})
-
-
-
-

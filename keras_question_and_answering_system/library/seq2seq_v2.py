@@ -1,9 +1,9 @@
 from keras.callbacks import ModelCheckpoint
-from keras.models import Model, model_from_json
+from keras.models import Model
 from keras.layers import Input, LSTM, Dense, Embedding, Dropout, add, RepeatVector
 from keras.preprocessing.sequence import pad_sequences
 
-from keras_question_and_answering_system.library.utility.squad_data_set import SQuADSeq2SeqTripleSamples
+from keras_question_and_answering_system.library.utility.qa_data_utils import Seq2SeqTripleSamples
 import qa_system_web.text_utils as text_utils
 import numpy as np
 import nltk
@@ -34,8 +34,8 @@ def generate_batch(ds, input_data, output_data, batch_size):
                     decoder_input_data_batch[lineIdx, idx, wid] = 1
                     if idx > 0:
                         decoder_target_data_batch[lineIdx, idx - 1, wid] = 1
-            yield [encoder_input_paragraph_data_batch, encoder_input_question_data_batch, decoder_input_data_batch], \
-                  decoder_target_data_batch
+            yield [encoder_input_paragraph_data_batch, encoder_input_question_data_batch,
+                   decoder_input_data_batch], decoder_target_data_batch
 
 
 class Seq2SeqV2QA(object):
@@ -197,7 +197,7 @@ class Seq2SeqV2QA(object):
         # print({'context': paragraph, 'question': question})
         print({'predict': predicted_answer, 'actual': actual_answer})
 
-    def fit(self, dataset, model_dir_path, epochs=None, batch_size=None, test_size=None, random_state=None):
+    def fit(self, data_set, model_dir_path, epochs=None, batch_size=None, test_size=None, random_state=None):
         if batch_size is None:
             batch_size = 64
         if epochs is None:
@@ -207,20 +207,20 @@ class Seq2SeqV2QA(object):
         if random_state is None:
             random_state = 42
 
-        dataset_seq2seq = SQuADSeq2SeqTripleSamples(dataset)
-        dataset_seq2seq.save(model_dir_path, 'qa-v2')
+        data_set_seq2seq = Seq2SeqTripleSamples(data_set)
+        data_set_seq2seq.save(model_dir_path, 'qa-v2')
 
-        Xtrain, Xtest, Ytrain, Ytest = dataset_seq2seq.split(test_size=test_size, random_state=random_state)
+        x_train, x_test, y_train, y_test = data_set_seq2seq.split(test_size=test_size, random_state=random_state)
 
-        print(len(Xtrain))
-        print(len(Xtest))
+        print(len(x_train))
+        print(len(x_test))
 
-        self.max_encoder_question_seq_length = dataset_seq2seq.input_question_max_seq_length
-        self.max_encoder_paragraph_seq_length = dataset_seq2seq.input_paragraph_max_seq_length
-        self.max_decoder_seq_length = dataset_seq2seq.target_max_seq_length
-        self.num_encoder_question_tokens = dataset_seq2seq.num_input_question_tokens
-        self.num_encoder_paragraph_tokens = dataset_seq2seq.num_input_paragraph_tokens
-        self.num_decoder_tokens = dataset_seq2seq.num_target_tokens
+        self.max_encoder_question_seq_length = data_set_seq2seq.input_question_max_seq_length
+        self.max_encoder_paragraph_seq_length = data_set_seq2seq.input_paragraph_max_seq_length
+        self.max_decoder_seq_length = data_set_seq2seq.target_max_seq_length
+        self.num_encoder_question_tokens = data_set_seq2seq.num_input_question_tokens
+        self.num_encoder_paragraph_tokens = data_set_seq2seq.num_input_paragraph_tokens
+        self.num_decoder_tokens = data_set_seq2seq.num_target_tokens
 
         weight_file_path = self.get_weight_file_path(model_dir_path)
         architecture_file_path = self.get_architecture_file_path(model_dir_path)
@@ -230,11 +230,11 @@ class Seq2SeqV2QA(object):
         with open(architecture_file_path, 'w') as f:
             f.write(self.model.to_json())
 
-        train_gen = generate_batch(dataset_seq2seq, Xtrain, Ytrain, batch_size)
-        test_gen = generate_batch(dataset_seq2seq, Xtest, Ytest, batch_size)
+        train_gen = generate_batch(data_set_seq2seq, x_train, y_train, batch_size)
+        test_gen = generate_batch(data_set_seq2seq, x_test, y_test, batch_size)
 
-        train_num_batches = len(Xtrain) // batch_size
-        test_num_batches = len(Xtest) // batch_size
+        train_num_batches = len(x_train) // batch_size
+        test_num_batches = len(x_test) // batch_size
 
         checkpoint = ModelCheckpoint(filepath=weight_file_path, save_best_only=True)
 
