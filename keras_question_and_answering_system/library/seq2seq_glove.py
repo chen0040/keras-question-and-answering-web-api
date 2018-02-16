@@ -143,6 +143,8 @@ class Seq2SeqGloveQA(object):
 
         self.model.save_weights(weight_file_path)
 
+        np.save(os.path.join(model_dir_path, Seq2SeqGloveQA.model_name + '-history.npy'), history.history)
+
         return history
 
     def reply(self, paragraph, question):
