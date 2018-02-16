@@ -1,6 +1,6 @@
 import json
 import nltk
-from experiments.text_utils import in_white_list
+from keras_question_and_answering_system.library.utility.text_utils import in_white_list
 
 
 class SquADDataSet(object):

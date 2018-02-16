@@ -1,8 +1,9 @@
 from collections import Counter
 import numpy as np
 from sklearn.model_selection import train_test_split
-from experiments.text_utils import in_white_list
 import nltk
+
+from keras_question_and_answering_system.library.utility.text_utils import in_white_list
 
 
 class Seq2SeqTupleSamples(object):

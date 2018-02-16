@@ -3,7 +3,7 @@ from keras.layers.recurrent import LSTM
 from keras.layers import Dense, Input, Embedding, Dropout, RepeatVector, add
 from keras.preprocessing.sequence import pad_sequences
 from keras.callbacks import ModelCheckpoint
-from experiments.squad_dataset import SquADDataSet, SQuADSeq2SeqTripleSamples
+from deprecated.squad_dataset import SquADDataSet, SQuADSeq2SeqTripleSamples
 import numpy as np
 
 np.random.seed(42)

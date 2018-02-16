@@ -1,75 +1,56 @@
-from keras.models import Model
-from keras.layers import Input, LSTM, Dense, Embedding, Dropout, add, RepeatVector
-from keras.preprocessing.sequence import pad_sequences
-import numpy as np
 import nltk
+import numpy as np
+from keras.layers import Input, LSTM, Dense, Dropout, add, RepeatVector
+from keras.models import Model
+from keras.preprocessing.sequence import pad_sequences
 
-from experiments import text_utils
-from experiments.squad_dataset import SquADDataSet
+from deprecated import glove_loader
+from deprecated.squad_dataset import SquADDataSet
+from keras_question_and_answering_system.library.utility.text_utils import in_white_list
 
 HIDDEN_UNITS = 256
-EMBED_HIDDEN_UNITS = 100
-MODEL_DIR_PATH = './models/SQuAD'
+DATA_SET_NAME = 'SQuAD'
+MODEL_DIR_PATH = './models/' + DATA_SET_NAME
 
 
-class SQuADSeq2SeqModel(object):
+class SQuADSeq2SeqGloveV2Model(object):
     model = None
     encoder_model = None
     decoder_model = None
-    input_paragraph_word2idx = None
-    input_paragraph_idx2word = None
-    input_question_word2idx = None
-    input_question_idx2word = None
     target_word2idx = None
     target_idx2word = None
+    max_decoder_seq_length = None
     max_encoder_paragraph_seq_length = None
     max_encoder_question_seq_length = None
-    max_decoder_seq_length = None
-    num_encoder_paragraph_tokens = None
-    num_encoder_question_tokens = None
     num_decoder_tokens = None
+    word2em = None
 
     def __init__(self):
-        name = 'seq2seq-v2'
-        self.input_paragraph_word2idx = np.load(MODEL_DIR_PATH + '/' + name + '-input-paragraph-word2idx.npy').item()
-        self.input_paragraph_idx2word = np.load(MODEL_DIR_PATH + '/' + name + '-input-paragraph-idx2word.npy').item()
-        self.input_question_word2idx = np.load(MODEL_DIR_PATH + '/' + name + '-input-question-word2idx.npy').item()
-        self.input_question_idx2word = np.load(MODEL_DIR_PATH + '/' + name + '-input-question-idx2word.npy').item()
-        self.target_word2idx = np.load(MODEL_DIR_PATH + '/' + name + '-target-word2idx.npy').item()
-        self.target_idx2word = np.load(MODEL_DIR_PATH + '/' + name + '-target-idx2word.npy').item()
+        name = 'seq2seq-glove-v2'
+        self.word2em = glove_loader.load_glove()
+
+        self.target_word2idx = np.load(
+            MODEL_DIR_PATH + '/' + name + '-target-word2idx.npy').item()
+        self.target_idx2word = np.load(
+            MODEL_DIR_PATH + '/' + name + '-target-idx2word.npy').item()
         context = np.load(MODEL_DIR_PATH + '/' + name + '-config.npy').item()
         self.max_encoder_paragraph_seq_length = context['input_paragraph_max_seq_length']
         self.max_encoder_question_seq_length = context['input_question_max_seq_length']
         self.max_decoder_seq_length = context['target_max_seq_length']
-        self.num_encoder_paragraph_tokens = context['num_input_paragraph_tokens']
-        self.num_encoder_question_tokens = context['num_input_question_tokens']
         self.num_decoder_tokens = context['num_target_tokens']
 
-        print(self.max_encoder_paragraph_seq_length)
-        print(self.max_encoder_question_seq_length)
-        print(self.max_decoder_seq_length)
-        print(self.num_encoder_paragraph_tokens)
-        print(self.num_encoder_question_tokens)
-        print(self.num_decoder_tokens)
+        context_inputs = Input(shape=(None, glove_loader.GLOVE_EMBEDDING_SIZE), name='context_inputs')
+        encoded_context = Dropout(0.3)(context_inputs)
 
-        context_inputs = Input(shape=(None,), name='context_inputs')
-        encoded_context = Embedding(input_dim=self.num_encoder_paragraph_tokens, output_dim=EMBED_HIDDEN_UNITS,
-                                    input_length=self.max_encoder_paragraph_seq_length,
-                                    name='context_embedding')(context_inputs)
-        encoded_context = Dropout(0.3)(encoded_context)
-
-        question_inputs = Input(shape=(None,), name='question_inputs')
-        encoded_question = Embedding(input_dim=self.num_encoder_question_tokens, output_dim=EMBED_HIDDEN_UNITS,
-                                     input_length=self.max_encoder_question_seq_length,
-                                     name='question_embedding')(question_inputs)
-        encoded_question = Dropout(0.3)(encoded_question)
-        encoded_question = LSTM(units=EMBED_HIDDEN_UNITS, name='question_lstm')(encoded_question)
+        question_inputs = Input(shape=(None, glove_loader.GLOVE_EMBEDDING_SIZE), name='question_inputs')
+        encoded_question = Dropout(0.3)(question_inputs)
+        encoded_question = LSTM(units=glove_loader.GLOVE_EMBEDDING_SIZE, name='question_lstm')(encoded_question)
         encoded_question = RepeatVector(self.max_encoder_paragraph_seq_length)(encoded_question)
 
         merged = add([encoded_context, encoded_question])
+        encoder_outputs, encoder_state_h, encoder_state_c = LSTM(units=HIDDEN_UNITS,
+                                                                 name='encoder_lstm', return_state=True)(merged)
 
-        encoder_lstm = LSTM(units=HIDDEN_UNITS, return_state=True, name='encoder_lstm')
-        encoder_outputs, encoder_state_h, encoder_state_c = encoder_lstm(merged)
         encoder_states = [encoder_state_h, encoder_state_c]
 
         decoder_inputs = Input(shape=(None, self.num_decoder_tokens), name='decoder_inputs')
@@ -97,26 +78,26 @@ class SQuADSeq2SeqModel(object):
     def reply(self, paragraph, question):
         input_paragraph_seq = []
         input_question_seq = []
-        input_paragraph_wid_list = []
-        input_question_wid_list = []
+        input_paragraph_emb = []
+        input_question_emb = []
         input_paragraph_text = paragraph.lower()
         input_question_text = question.lower()
         for word in nltk.word_tokenize(input_paragraph_text):
-            if not text_utils.in_white_list(word):
+            if not in_white_list(word):
                 continue
-            idx = 1  # default [UNK]
-            if word in self.input_paragraph_word2idx:
-                idx = self.input_paragraph_word2idx[word]
-            input_paragraph_wid_list.append(idx)
+            emb = np.zeros(shape=glove_loader.GLOVE_EMBEDDING_SIZE)
+            if word in self.word2em:
+                emb = self.word2em[word]
+            input_paragraph_emb.append(emb)
         for word in nltk.word_tokenize(input_question_text):
-            if not text_utils.in_white_list(word):
+            if not in_white_list(word):
                 continue
-            idx = 1  # default [UNK]
-            if word in self.input_question_word2idx:
-                idx = self.input_question_word2idx[word]
-            input_question_wid_list.append(idx)
-        input_paragraph_seq.append(input_paragraph_wid_list)
-        input_question_seq.append(input_question_wid_list)
+            emb = np.zeros(shape=glove_loader.GLOVE_EMBEDDING_SIZE)
+            if word in self.word2em:
+                emb = self.word2em[word]
+            input_question_emb.append(emb)
+        input_paragraph_seq.append(input_paragraph_emb)
+        input_question_seq.append(input_question_emb)
         input_paragraph_seq = pad_sequences(input_paragraph_seq, self.max_encoder_paragraph_seq_length)
         input_question_seq = pad_sequences(input_question_seq, self.max_encoder_question_seq_length)
         states_value = self.encoder_model.predict([input_paragraph_seq, input_question_seq])
@@ -152,7 +133,7 @@ class SQuADSeq2SeqModel(object):
 
 
 def main():
-    model = SQuADSeq2SeqModel()
+    model = SQuADSeq2SeqGloveV2Model()
     dataset = SquADDataSet()
     for i in range(20):
         model.test_run(dataset, i * 10)

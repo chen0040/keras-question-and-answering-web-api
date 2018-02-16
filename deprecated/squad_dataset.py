@@ -3,7 +3,7 @@ import nltk
 from collections import Counter
 import numpy as np
 from sklearn.model_selection import train_test_split
-from experiments.text_utils import in_white_list
+from keras_question_and_answering_system.library.utility.text_utils import in_white_list
 
 DATA_PATH = 'data/SQuAD/train-v1.1.json'
 MAX_CONTEXT_SEQ_LENGTH = 300

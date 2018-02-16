@@ -6,8 +6,8 @@ from keras.layers.recurrent import LSTM
 from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
 
-from experiments.glove_loader import Glove
-from experiments.squad_dataset import SquADDataSet, SQuADSeq2SeqEmbTripleSamples
+from deprecated.glove_loader import Glove
+from deprecated.squad_dataset import SquADDataSet, SQuADSeq2SeqEmbTripleSamples
 
 np.random.seed(42)
 

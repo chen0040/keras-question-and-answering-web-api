@@ -45,7 +45,7 @@ python squad_seq2seq_train.py
 ```
 
 The above commands will train one-hot encoding seq2seq model using SQuAD and store the trained model
-in [demo/models/SQuAD/seq2seq-**"](demo/models)
+in [demo/models/seq2seq-**"](demo/models)
 
 If you like to train other models, you can use the same command above on another train python scripts:
 

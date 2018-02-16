@@ -4,8 +4,8 @@ from keras.preprocessing.sequence import pad_sequences
 import numpy as np
 import nltk
 
-from experiments import text_utils
-from experiments.squad_dataset import SquADDataSet
+from deprecated.squad_dataset import SquADDataSet
+from keras_question_and_answering_system.library.utility import text_utils
 
 HIDDEN_UNITS = 256
 MODEL_DIR_PATH = './models/SQuAD'

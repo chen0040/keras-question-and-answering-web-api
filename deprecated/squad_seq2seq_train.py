@@ -1,40 +1,39 @@
-import numpy as np
-from keras.callbacks import ModelCheckpoint
-from keras.layers import Dense, Input
-from keras.layers.recurrent import LSTM
 from keras.models import Model
+from keras.layers.recurrent import LSTM
+from keras.layers import Dense, Input, Embedding
 from keras.preprocessing.sequence import pad_sequences
-
-from experiments.glove_loader import Glove
-from experiments.squad_dataset import SquADDataSet, SQuADSeq2SeqEmbTupleSamples
+from keras.callbacks import ModelCheckpoint
+from deprecated.squad_dataset import SquADDataSet, SQuADSeq2SeqTupleSamples
+import numpy as np
 
 np.random.seed(42)
 
 BATCH_SIZE = 64
-NUM_EPOCHS = 100
 HIDDEN_UNITS = 256
-DATA_SET_NAME = 'SQuAD'
-MODEL_DIR_PATH = 'models/' + DATA_SET_NAME
-WEIGHT_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-glove-weights.h5'
-ARCHITECTURE_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-glove-architecture.json'
-
-glove = Glove()
+NUM_EPOCHS = 100
+MAX_VOCAB_SIZE = 600
+MODEL_DIR_PATH = 'models/SQuAD'
+WEIGHT_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-weights.h5'
+ARCHITECTURE_FILE_PATH = MODEL_DIR_PATH + '/seq2seq-architecture.json'
 
 dataset = SquADDataSet(10000)
-dataset_seq2seq = SQuADSeq2SeqEmbTupleSamples(dataset, glove.word2em, glove.GLOVE_EMBEDDING_SIZE)
-dataset_seq2seq.save(MODEL_DIR_PATH, 'glove')
+dataset_seq2seq = SQuADSeq2SeqTupleSamples(dataset)
+dataset_seq2seq.save(MODEL_DIR_PATH)
 
 
-def generate_batch(ds, input_word2em_data, output_data):
-    num_batches = len(input_word2em_data) // BATCH_SIZE
+def generate_batch(ds, input_data, target_data):
+    num_batches = len(input_data) // BATCH_SIZE
+
     while True:
         for batchIdx in range(0, num_batches):
             start = batchIdx * BATCH_SIZE
             end = (batchIdx + 1) * BATCH_SIZE
-            encoder_input_data_batch = pad_sequences(input_word2em_data[start:end], ds.input_max_seq_length)
-            decoder_target_data_batch = np.zeros(shape=(BATCH_SIZE, ds.target_max_seq_length, ds.num_target_tokens))
-            decoder_input_data_batch = np.zeros(shape=(BATCH_SIZE, ds.target_max_seq_length, ds.num_target_tokens))
-            for lineIdx, target_wid_list in enumerate(output_data[start:end]):
+            encoder_input_data_batch = pad_sequences(input_data[start:end], ds.input_max_seq_length)
+            decoder_target_data_batch = np.zeros(shape=(BATCH_SIZE, ds.target_max_seq_length,
+                                                        ds.num_target_tokens))
+            decoder_input_data_batch = np.zeros(shape=(BATCH_SIZE, ds.target_max_seq_length,
+                                                       ds.num_target_tokens))
+            for lineIdx, target_wid_list in enumerate(target_data[start:end]):
                 for idx, wid in enumerate(target_wid_list):
                     if wid == 0:  # UNKNOWN
                         continue
@@ -44,9 +43,11 @@ def generate_batch(ds, input_word2em_data, output_data):
             yield [encoder_input_data_batch, decoder_input_data_batch], decoder_target_data_batch
 
 
-encoder_inputs = Input(shape=(None, glove.GLOVE_EMBEDDING_SIZE), name='encoder_inputs')
+encoder_inputs = Input(shape=(None,), name='encoder_inputs')
+encoder_embedding = Embedding(input_dim=dataset_seq2seq.num_input_tokens, output_dim=HIDDEN_UNITS,
+                              input_length=dataset_seq2seq.input_max_seq_length, name='encoder_embedding')
 encoder_lstm = LSTM(units=HIDDEN_UNITS, return_state=True, name='encoder_lstm')
-encoder_outputs, encoder_state_h, encoder_state_c = encoder_lstm(encoder_inputs)
+encoder_outputs, encoder_state_h, encoder_state_c = encoder_lstm(encoder_embedding(encoder_inputs))
 encoder_states = [encoder_state_h, encoder_state_c]
 
 decoder_inputs = Input(shape=(None, dataset_seq2seq.num_target_tokens), name='decoder_inputs')
@@ -60,7 +61,8 @@ model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
 
 model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
-open(ARCHITECTURE_FILE_PATH, 'w').write(model.to_json())
+json = model.to_json()
+open(ARCHITECTURE_FILE_PATH, 'w').write(json)
 
 Xtrain, Xtest, Ytrain, Ytest = dataset_seq2seq.split(test_size=0.2, random_state=42)
 
