@@ -41,7 +41,7 @@ class Seq2SeqGloveQA(object):
         self.max_decoder_seq_length = None
         self.max_encoder_seq_length = None
         self.num_decoder_tokens = None
-        self.glove_model = None
+        self.glove_model = GloveModel()
 
     @staticmethod
     def get_architecture_file_path(model_dir_path):
@@ -52,7 +52,6 @@ class Seq2SeqGloveQA(object):
         return os.path.join(model_dir_path, Seq2SeqGloveQA.model_name + '-weights.h5')
 
     def load_glove_model(self, data_dir_path):
-        self.glove_model = GloveModel()
         self.glove_model.load_model(data_dir_path)
 
     def load_model(self, model_dir_path):
@@ -66,7 +65,7 @@ class Seq2SeqGloveQA(object):
         self.num_decoder_tokens = context['num_target_tokens']
 
         self.create_model()
-        self.model.load_weights(model_dir_path + '/' + Seq2SeqGloveQA.model_name + '-weights.h5')
+        self.model.load_weights(Seq2SeqGloveQA.get_weight_file_path(model_dir_path))
 
     def create_model(self):
         hidden_units = 256
