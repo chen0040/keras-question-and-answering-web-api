@@ -96,11 +96,11 @@ class Seq2SeqQA(object):
     def load_model(self, model_dir_path):
         weight_file_path = Seq2SeqQA.get_weight_file_path(model_dir_path)
 
-        self.input_word2idx = np.load(model_dir_path + '/seq2seq-input-word2idx.npy').item()
-        self.input_idx2word = np.load(model_dir_path + '/seq2seq-input-idx2word.npy').item()
-        self.target_word2idx = np.load(model_dir_path + '/seq2seq-target-word2idx.npy').item()
-        self.target_idx2word = np.load(model_dir_path + '/seq2seq-target-idx2word.npy').item()
-        context = np.load(model_dir_path + '/seq2seq-config.npy').item()
+        self.input_word2idx = np.load(model_dir_path + '/' + self.model_name + '-input-word2idx.npy').item()
+        self.input_idx2word = np.load(model_dir_path + '/' + self.model_name + '-input-idx2word.npy').item()
+        self.target_word2idx = np.load(model_dir_path + '/' + self.model_name + '-target-word2idx.npy').item()
+        self.target_idx2word = np.load(model_dir_path + '/' + self.model_name + '-target-idx2word.npy').item()
+        context = np.load(model_dir_path + '/' + self.model_name + '-config.npy').item()
         self.max_encoder_seq_length = context['input_max_seq_length']
         self.max_decoder_seq_length = context['target_max_seq_length']
         self.num_encoder_tokens = context['num_input_tokens']
@@ -129,7 +129,7 @@ class Seq2SeqQA(object):
             random_state = 42
 
         dataset_seq2seq = SQuADSeq2SeqTupleSamples(dataset)
-        dataset_seq2seq.save(model_dir_path)
+        dataset_seq2seq.save(model_dir_path, 'qa')
 
         Xtrain, Xtest, Ytrain, Ytest = dataset_seq2seq.split(test_size=test_size, random_state=random_state)
 
