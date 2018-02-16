@@ -39,8 +39,8 @@ def generate_batch(ds, input_word2em_data, output_data, batch_size):
                    decoder_input_data_batch], decoder_target_data_batch
 
 
-class Seq2SeqGloveV2QA(object):
-    model_name = 'seq2seq-qa-glove-v2'
+class Seq2SeqV2GloveQA(object):
+    model_name = 'seq2seq-qa-v2-glove'
 
     def __init__(self):
         self.model = None
@@ -56,28 +56,28 @@ class Seq2SeqGloveV2QA(object):
 
     @staticmethod
     def get_weight_file_path(model_dir_path):
-        return os.path.join(model_dir_path, Seq2SeqGloveV2QA.model_name + '-weights.h5')
+        return os.path.join(model_dir_path, Seq2SeqV2GloveQA.model_name + '-weights.h5')
 
     @staticmethod
     def get_architecture_file_path(model_dir_path):
-        return os.path.join(model_dir_path, Seq2SeqGloveV2QA.model_name + '-architecture.json')
+        return os.path.join(model_dir_path, Seq2SeqV2GloveQA.model_name + '-architecture.json')
 
     def load_glove_model(self, data_dir_path):
         self.glove_model.load_model(data_dir_path)
 
     def load_model(self, model_dir_path):
         self.target_word2idx = np.load(
-            model_dir_path + '/' + Seq2SeqGloveV2QA.model_name + '-target-word2idx.npy').item()
+            model_dir_path + '/' + Seq2SeqV2GloveQA.model_name + '-target-word2idx.npy').item()
         self.target_idx2word = np.load(
-            model_dir_path + '/' + Seq2SeqGloveV2QA.model_name + '-target-idx2word.npy').item()
-        context = np.load(model_dir_path + '/' + Seq2SeqGloveV2QA.model_name + '-config.npy').item()
+            model_dir_path + '/' + Seq2SeqV2GloveQA.model_name + '-target-idx2word.npy').item()
+        context = np.load(model_dir_path + '/' + Seq2SeqV2GloveQA.model_name + '-config.npy').item()
         self.max_encoder_paragraph_seq_length = context['input_paragraph_max_seq_length']
         self.max_encoder_question_seq_length = context['input_question_max_seq_length']
         self.max_decoder_seq_length = context['target_max_seq_length']
         self.num_decoder_tokens = context['num_target_tokens']
 
         self.create_model()
-        self.model.load_weights(Seq2SeqGloveV2QA.get_weight_file_path(model_dir_path))
+        self.model.load_weights(Seq2SeqV2GloveQA.get_weight_file_path(model_dir_path))
 
     def create_model(self):
         hidden_units = 256
@@ -127,7 +127,7 @@ class Seq2SeqGloveV2QA(object):
 
         data_set_seq2seq = SQuADSeq2SeqEmbTripleSamples(data_set, self.glove_model.word2em,
                                                         self.glove_model.embedding_size)
-        data_set_seq2seq.save(model_dir_path, 'qa-glove-v2')
+        data_set_seq2seq.save(model_dir_path, 'qa-v2-glove')
 
         x_train, x_test, y_train, y_test = data_set_seq2seq.split(test_size=test_size, random_state=random_state)
 
