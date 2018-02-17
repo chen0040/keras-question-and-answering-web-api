@@ -6,6 +6,17 @@ import nltk
 from keras_question_and_answering_system.library.utility.text_utils import in_white_list
 
 
+class QADataSet(object):
+    def __init__(self):
+        self.data = []
+
+    def get_data(self, index):
+        return self.data[index]
+
+    def size(self):
+        return len(self.data)
+
+
 class Seq2SeqTupleSamples(object):
     input_max_seq_length = None
     target_max_seq_length = None

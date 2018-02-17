@@ -1,25 +1,26 @@
 import json
 import nltk
+
+from keras_question_and_answering_system.library.utility.qa_data_utils import QADataSet
 from keras_question_and_answering_system.library.utility.text_utils import in_white_list
 
 
-class SquADDataSet(object):
+class SquADDataSet(QADataSet):
 
     def __init__(self, data_path, max_data_count=None,
                  max_context_seq_length=None,
                  max_question_seq_length=None,
                  max_target_seq_length=None):
+        super(SquADDataSet, self).__init__()
+
         if max_data_count is None:
             max_data_count = 10000
-
         if max_context_seq_length is None:
             max_context_seq_length = 300
         if max_question_seq_length is None:
             max_question_seq_length = 60
         if max_target_seq_length is None:
             max_target_seq_length = 50
-
-        self.data = []
 
         with open(data_path) as file:
             json_data = json.load(file)
@@ -33,8 +34,8 @@ class SquADDataSet(object):
                     qas = paragraph['qas']
                     for qas_instance in qas:
                         question = qas_instance['question']
-                        question_wids = [w.lower() for w in nltk.word_tokenize(question) if in_white_list(w)]
-                        if len(question_wids) > max_question_seq_length:
+                        question_wid_list = [w.lower() for w in nltk.word_tokenize(question) if in_white_list(w)]
+                        if len(question_wid_list) > max_question_seq_length:
                             continue
                         answers = qas_instance['answers']
                         for answer in answers:
@@ -51,8 +52,4 @@ class SquADDataSet(object):
                 if len(self.data) >= max_data_count:
                     break
 
-    def get_data(self, index):
-        return self.data[index]
 
-    def size(self):
-        return len(self.data)
