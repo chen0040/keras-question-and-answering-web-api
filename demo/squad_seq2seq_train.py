@@ -11,8 +11,8 @@ def main():
     data_set = SquADDataSet(data_path='./data/SQuAD/train-v1.1.json')
 
     qa = Seq2SeqQA()
-    batch_size = 32
-    epochs = 100
+    batch_size = 64
+    epochs = 200
     history = qa.fit(data_set, model_dir_path=output_dir_path,
                      batch_size=batch_size, epochs=epochs,
                      random_state=random_state)
