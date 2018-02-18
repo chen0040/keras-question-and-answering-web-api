@@ -16,6 +16,19 @@ class QADataSet(object):
     def size(self):
         return len(self.data)
 
+    def to_tree(self):
+        tree = dict()
+        for context, question, answer in self.data:
+            if context in tree:
+                tree[context].append((question, answer))
+            else:
+                tree[context] = list()
+
+        result = list()
+        for context, qa_item in tree.items():
+            result.append((context, qa_item))
+        return result
+
 
 class Seq2SeqTupleSamples(object):
     input_max_seq_length = None
