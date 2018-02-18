@@ -89,12 +89,15 @@ If you like to train other models, you can use the same command above on another
 
 ### Predict Answers
 
-Once the trained models are generated. the predictors in the [demo/models](demo/models) can be used to load these model and predict answer based on the paragraph context and the question:
+Once the trained models are generated. the predictors in the [demo/models](demo/models) can be used to load these model and predict answer based on the paragraph context and the question.
 
-* [squad_seq2seq_predict.py](demo/squad_seq2seq_predict.py)
-* [squad_seq2seq_v2_predict.py](demo/squad_seq2seq_v2_predict.py)
-* [squad_seq2seq_glove_predict.py](demo/squad_seq2seq_glove_predict.py)
-* [squad_seq2seq_v2_glove_predict.py](demo/squad_seq2seq_v2_glove_predict.py)
+For example, to test the trained model of [Seq2SeqQA](keras_question_and_answering_system/library/seq2seq.py) on
+ SQuAD data set, run the following command:
+
+```bash
+cd demo
+python squad_seq2seq_predict.py
+```
 
 Below is the sample code of [squad_seq2seq_predict.py](demo/squad_seq2seq_predict.py) which tries to
 predict the answer based on context provided and question being asked:
@@ -186,6 +189,12 @@ context:  Besides its prominence in sports, Notre Dame is also a large, four-yea
 question:  Where among US universities does Notre Dame rank?
 {'guessed_answer': 'among the top twenty', 'actual_answer': 'among the top twenty'}
 ```
+
+Other available scripts for testing the various deep learning models are:
+
+* [squad_seq2seq_v2_predict.py](demo/squad_seq2seq_v2_predict.py)
+* [squad_seq2seq_glove_predict.py](demo/squad_seq2seq_glove_predict.py)
+* [squad_seq2seq_v2_glove_predict.py](demo/squad_seq2seq_v2_glove_predict.py)
 
 ### Running Web Api Server (WIP)
 
