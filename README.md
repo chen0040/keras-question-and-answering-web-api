@@ -195,11 +195,25 @@ Goto [demo_web](demo_web) directory and run the following command:
 python flaskr.py
 ```
 
-Now navigate your browser to http://localhost:5000 and you can try out various predictors built with the following
-trained seq2seq models:
+Now navigate your browser to http://localhost:5000
 
-* Word-level seq2seq models (One Hot Encoding)
-* Word-level seq2seq models (GloVe Encoding)
+To use the question and answering system as web api, you can send the following curl command to the 
+web api server running at http://localhost:5000
+
+```bash
+curl -H 'Content-Type: application/json' -X POST -d '{"agent":"seq2seq", "context":"...", "question":"..."}' http://localhost:5000/qa_api
+```
+
+And the following will be the json response:
+
+```json
+{
+    "agent": "seq2seq",
+    "context": "...",
+    "question": "...",
+    "answer": "..."
+}
+```
 
 # Configure to run on GPU on Windows
 
