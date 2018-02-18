@@ -13,7 +13,7 @@ def main():
     qa = Seq2SeqGloveQA()
     qa.load_glove_model('./very_large_data')
     batch_size = 64
-    epochs = 1000
+    epochs = 200
     history = qa.fit(data_set, model_dir_path=output_dir_path,
                      batch_size=batch_size, epochs=epochs,
                      random_state=random_state)
