@@ -42,10 +42,11 @@ def main():
     plt.xlabel('training epoch')
 
     plt.tight_layout()
-    plt.show()
 
     file_path = os.path.join(model_dir_path, 'training-history-comparison.png')
     plt.savefig(file_path)
+
+    plt.show()
 
 
 if __name__ == '__main__':

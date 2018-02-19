@@ -90,6 +90,10 @@ If you like to train other models, you can use the same command above on another
 * [squad_seq2seq_glove_train.py](demo/squad_seq2seq_glove_train.py): train on SQuAD on word-level (GloVe word2vec encoding) with input = paragraph_context + ' Q ' + question
 * [squad_seq2seq_v2_glove_train.py](demo/squad_seq2seq_v2_glove_train.py): train on SQuAD on word-level (GloVe word2vec encoding) but different from squad_seq2seq_glove_train.py in that the paragraph context and the question are added after the LSTM + RepeatVector layer
 
+The figure below compare the training accuracy and validation accuracy of various models:
+
+![model-comparison](demo/models/training-history-comparison.png)
+
 ### Predict Answers
 
 Once the trained models are generated. the predictors in the [demo/models](demo/models) can be used to load these model and predict answer based on the paragraph context and the question.
