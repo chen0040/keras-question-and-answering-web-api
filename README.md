@@ -23,21 +23,24 @@ can be found in [demo](demo)
 
 # Usage
 
-Run the following command to install the keras, flask and other dependency modules:
+The question answering models are trained using [SQuAD](https://rajpurkar.github.io/SQuAD-explorer/) data set and are available in the 
+[demo/models](demo/models) directory. 
+
+### Project Dependencies
+
+Run the following command to install the keras, tensorflow, flask and other dependency modules:
 
 ```bash
 sudo pip install -r requirements.txt
 ```
 
-The question answering models are trained using [SQuAD](https://rajpurkar.github.io/SQuAD-explorer/) data set and are available in the 
-"qa_system_train/models" directory. During runtime, the flask app will load these trained models to perform the 
-qa-reply
+
 
 ### Training 
 
-While the trained models are already included in the [demo/models](demo/models) folder in the project.
+The trained models are included in the [demo/models](demo/models) folder in the project.
 
-the training was done on with 200 epochs and batch size of 64 on tensorflow-gpu.
+The training was done on with 200 epochs and batch size of 64 on tensorflow-gpu.
  
 If you like to tune the parameters of the seq2seq and complete the training of the models, you can use the 
 following command to run the training:
