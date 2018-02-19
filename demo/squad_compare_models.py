@@ -2,10 +2,10 @@ import os
 import numpy as np
 from matplotlib import pyplot as plt
 
+
 def main():
     model_dir_path = './models'
-    models = ['seq2seq-qa', 'seq2seq-qa-v2', 'seq2seq-qa-glove']
-    histories = list()
+    models = ['seq2seq-qa', 'seq2seq-qa-v2', 'seq2seq-qa-glove', 'seq2seq-qa-v2-glove']
     acc_cmp = dict()
     val_acc_cmp = dict()
     labels = list()

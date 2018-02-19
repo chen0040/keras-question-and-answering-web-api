@@ -23,26 +23,31 @@ can be found in [demo](demo)
 
 # Usage
 
-The question answering models are trained using [SQuAD](https://rajpurkar.github.io/SQuAD-explorer/) data set and are available in the 
-[demo/models](demo/models) directory. 
-
-### Project Dependencies
-
-Run the following command to install the keras, tensorflow, flask and other dependency modules:
+Before start, run the following command to install the keras, tensorflow, flask and other dependency modules:
 
 ```bash
 sudo pip install -r requirements.txt
 ```
 
+### SQuAD Data Set
 
+The question answering models are trained using [SQuAD](https://rajpurkar.github.io/SQuAD-explorer/) data set and are available in the 
+[demo/models](demo/models) directory. 
+
+To view the SQuAD data set used for training, run the [squad_explore.py](demo/squad_explore.py) using the following command:
+
+```bash
+cd demo
+python squad_explore.py
+```
 
 ### Training 
 
 The trained models are included in the [demo/models](demo/models) folder in the project.
 
-The training was done on with 200 epochs and batch size of 64 on tensorflow-gpu.
+The training was done using the SQuAD data set on with 200 epochs and batch size of 64 on tensorflow-gpu.
  
-If you like to tune the parameters of the seq2seq and complete the training of the models, you can use the 
+If you like to tune the parameters of the seq2seq and redo the training of the models, you can use the 
 following command to run the training:
 
 ```bash
@@ -90,15 +95,15 @@ If you like to train other models, you can use the same command above on another
 * [squad_seq2seq_glove_train.py](demo/squad_seq2seq_glove_train.py): train on SQuAD on word-level (GloVe word2vec encoding) with input = paragraph_context + ' Q ' + question
 * [squad_seq2seq_v2_glove_train.py](demo/squad_seq2seq_v2_glove_train.py): train on SQuAD on word-level (GloVe word2vec encoding) but different from squad_seq2seq_glove_train.py in that the paragraph context and the question are added after the LSTM + RepeatVector layer
 
-The figure below compare the training accuracy and validation accuracy of various models:
+The figure below compare the training accuracy and validation accuracy of various models using the script [squad_compare_models](demo/squad_compare_models.py):
 
 ![model-comparison](demo/models/training-history-comparison.png)
 
 ### Predict Answers
 
-Once the trained models are generated. the predictors in the [demo/models](demo/models) can be used to load these model and predict answer based on the paragraph context and the question.
+With the trained models in [demo/models](demo/models), the predictors in the [demo](demo) can be used to load these model and predict answer based on the paragraph context and the question.
 
-For example, to test the trained model of [Seq2SeqQA](keras_question_and_answering_system/library/seq2seq.py) on
+For example, to test the trained model for [Seq2SeqQA](keras_question_and_answering_system/library/seq2seq.py) on
  SQuAD data set, run the following command:
 
 ```bash
@@ -184,6 +189,12 @@ question:  Where among US universities does Notre Dame rank?
 {'guessed_answer': 'among the top twenty', 'actual_answer': 'among the top twenty'}
 ```
 
+Other available scripts for testing the various deep learning models are:
+
+* [squad_seq2seq_v2_predict.py](demo/squad_seq2seq_v2_predict.py)
+* [squad_seq2seq_glove_predict.py](demo/squad_seq2seq_glove_predict.py)
+* [squad_seq2seq_v2_glove_predict.py](demo/squad_seq2seq_v2_glove_predict.py)
+
 Below show the console output from [squad_seq2seq_v2_predict.py](demo/squad_seq2seq_v2_predict.py):
 
 ```text
@@ -248,12 +259,6 @@ context:  Located approximately 250 kilometres (160 mi) east of Puerto Rico and 
 question:  How many Miles East of Puerto Rico is St. Barts?
 {'guessed_answer': '160', 'actual_answer': '160'}
 ```
-
-Other available scripts for testing the various deep learning models are:
-
-* [squad_seq2seq_v2_predict.py](demo/squad_seq2seq_v2_predict.py)
-* [squad_seq2seq_glove_predict.py](demo/squad_seq2seq_glove_predict.py)
-* [squad_seq2seq_v2_glove_predict.py](demo/squad_seq2seq_v2_glove_predict.py)
 
 ### Running Web Api Server
 
