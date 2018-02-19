@@ -10,7 +10,11 @@ def main():
         history_file_name = model_name + '-history.npy'
         history_file_path = os.path.join(model_dir_path, history_file_name)
         history = np.load(history_file_path).item()
-        print(history_file_name, history)
+        for index in range(0, 201, 50):
+            acc_data = history['acc']
+            epoch = min(len(acc_data)-1, index)
+            acc = acc_data[epoch]
+            print(model_name, epoch, acc)
 
 
 if __name__ == '__main__':
