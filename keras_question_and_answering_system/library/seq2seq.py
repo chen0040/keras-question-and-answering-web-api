@@ -216,6 +216,6 @@ class Seq2SeqQA(object):
         if index is None:
             index = 0
         paragraph, question, actual_answer = ds.get_data(index)
+        print({'context': paragraph, 'question': question})
         predicted_answer = self.reply(paragraph, question)
-        # print({'context': paragraph, 'question': question})
         print({'predict': predicted_answer, 'actual': actual_answer})

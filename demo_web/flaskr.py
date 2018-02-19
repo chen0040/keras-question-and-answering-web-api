@@ -82,11 +82,13 @@ def qa_api():
 
 def main():
     data_set.load_model(data_path='../demo/data/SQuAD/train-v1.1.json')
-    qa_list = data_set.to_tree()
+    qa_list.clear()
+    for qa_item in data_set.to_tree():
+        qa_list.append(qa_item)
 
     seq2seq.load_model(model_dir_path='../demo/models')
     seq2seq.test_run(data_set)
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)
 
 
 if __name__ == '__main__':
