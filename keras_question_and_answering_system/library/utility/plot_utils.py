@@ -1,9 +1,4 @@
 from matplotlib import pyplot as plt
-import numpy as np
-import itertools
-
-def create
-
 
 def plot_history_2win(history):
     plt.subplot(211)
