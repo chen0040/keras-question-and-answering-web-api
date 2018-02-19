@@ -4,7 +4,7 @@ import numpy as np
 
 def main():
     model_dir_path = './models'
-    models = ['seq2seq', 'seq2seq-v2', 'seq2seq-glove']
+    models = ['seq2seq-qa', 'seq2seq-qa-v2', 'seq2seq-qa-glove']
     histories = list()
     for model_name in models:
         history_file_name = model_name + '-history.npy'
