@@ -27,27 +27,30 @@ def about():
 @app.route('/qa', methods=['POST', 'GET'])
 def qa():
     if request.method == 'POST':
-        if 'context' not in request.form and 'question' not in request.form:
+        if 'question_context' not in request.form and 'question' not in request.form:
             flash('No sentence post')
             redirect(request.url)
-        elif request.form['context'] == '' or request.form['question'] == '':
+        elif request.form['question_context'] == '' or request.form['question'] == '':
             flash('No context or question')
             redirect(request.url)
         else:
-            question_context = request.form['context']
-            question = request.form['question']
+            question_context = request.form['question_context'].strip()
+            question = request.form['question'].strip()
+            true_answer = request.form['true_answer'].strip()
             ans = seq2seq.reply(question_context, question)
+            print('predicted answer; ', ans)
             return render_template('qa.html', question_context=question_context,
-                                   question=question, answer=ans)
+                                   question=question, true_answer=true_answer, answer=ans)
     elif request.method == 'GET':
         context_index = int(request.args.get('context_index'))
-        question_index = request.args.get('question_index')
+        question_index = int(request.args.get('question_index'))
         qa_item = qa_list[context_index]
-        qa_pair = qa_item[question_index]
+        qa_pair = qa_item[1][question_index]
         question = qa_pair[0]
         context = qa_item[0]
+        answer = qa_pair[1]
     return render_template('qa.html', question_context=context,
-                           question=question, answer='')
+                           question=question, true_answer=answer, answer='')
 
 
 @app.route('/qa_api', methods=['POST', 'GET'])

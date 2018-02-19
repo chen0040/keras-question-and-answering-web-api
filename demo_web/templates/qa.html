@@ -2,9 +2,18 @@
 {% block body %}
     <p>Write question context and question below and press Query to get the answer (SQuaD): </p>
     <form method=post>
-      <p>Write context here: <input type=text name=question_context></p>
-        <p>Write question here: <input type=text name=question></p>
-         <input type=submit value=Query>
+      <p>Write context here: </p>
+        <textarea name=question_context style="width:100%" rows="8">{{question_context}}</textarea>
+        <p>Write question here: </p>
+        <textarea name=question style="width:100%" rows="8">{{question}}</textarea>
+        <p>True Answer:</p>
+        <textarea name=true_answer style="width:100%" rows="8">{{true_answer}}</textarea>
+         <input type=submit value="Click here to Ask My Bot">
     </form>
-    <p>{{ answer }}</p>
+
+
+    <p>Predicted Answer:</p>
+    <p style="font-weight: bold">
+        {{answer}}
+    </p>
 {% endblock %}
