@@ -1,11 +1,12 @@
 {% extends "layout.html" %}
 {% block body %}
-    {% for qa_index in range(min(len(qa_list), 40)) %}
-      <p>{{qa_list[qa_index][0]}}</p>
+    {% for qa in qa_list %}
+      {% set outer_loop = loop %}
+      <p>{{qa[0]}}</p>
       <ul>
-      {% for question_index in range(len(qa_list[qa_index][1])) %}
-        <li><a href="{{ url_for('qa', context_index=qa_index, question_index=) }}">{{qa_list[qa_index][1][question_index][0]}}</a></li>
-      <% endfor %>
+      {% for question in qa[1] %}
+        <li><a href="{{ url_for('qa', context_index=outer_loop.index-1, question_index=loop.index-1) }}">{{question[0]}}</a></li>
+      {% endfor %}
       </ul>
     {% endfor %}
 {% endblock %}
