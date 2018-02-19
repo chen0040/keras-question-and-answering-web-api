@@ -199,7 +199,7 @@ Other available scripts for testing the various deep learning models are:
 * [squad_seq2seq_glove_predict.py](demo/squad_seq2seq_glove_predict.py)
 * [squad_seq2seq_v2_glove_predict.py](demo/squad_seq2seq_v2_glove_predict.py)
 
-### Running Web Api Server (WIP)
+### Running Web Api Server
 
 Goto [demo_web](demo_web) directory and run the following command:
 
