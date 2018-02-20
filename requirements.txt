@@ -4,5 +4,5 @@ numpy
 nltk
 h5py
 scikit-learn
-tensorflow-gpu
+tensorflow
 matplotlib
